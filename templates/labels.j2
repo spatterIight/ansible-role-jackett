@@ -1,0 +1,38 @@
+{% if jackett_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if jackett_container_labels_traefik_docker_network %}
+traefik.docker.network={{ jackett_container_labels_traefik_docker_network }}
+{% endif %}
+
+{% set middlewares = [] %}
+
+{% if jackett_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ jackett_identifier }}-slashless-redirect.redirectregex.regex=^({{ jackett_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ jackett_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + [jackett_identifier + '-slashless-redirect'] %}
+{% endif %}
+
+{% if jackett_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ jackett_identifier }}-strip-prefix.stripprefix.prefixes={{ jackett_container_labels_traefik_path_prefix }}
+{% set middlewares = middlewares + [jackett_identifier + '-strip-prefix'] %}
+{% endif %}
+
+traefik.http.routers.{{ jackett_identifier }}.rule={{ jackett_container_labels_traefik_rule }}
+{% if jackett_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.{{ jackett_identifier }}.priority={{ jackett_container_labels_traefik_priority }}
+{% endif %}
+traefik.http.routers.{{ jackett_identifier }}.service={{ jackett_identifier }}
+{% if middlewares | length > 0 %}
+traefik.http.routers.{{ jackett_identifier }}.middlewares={{ middlewares | join(',') }}
+{% endif %}
+traefik.http.routers.{{ jackett_identifier }}.entrypoints={{ jackett_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ jackett_identifier }}.tls={{ jackett_container_labels_traefik_tls | to_json }}
+{% if jackett_container_labels_traefik_tls %}
+traefik.http.routers.{{ jackett_identifier }}.tls.certResolver={{ jackett_container_labels_traefik_tls_certResolver }}
+{% endif %}
+
+traefik.http.services.{{ jackett_identifier }}.loadbalancer.server.port={{ jackett_container_http_port }}
+{% endif %}
+
+{{ jackett_container_labels_additional_labels }}
