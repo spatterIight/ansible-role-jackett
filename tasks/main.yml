@@ -1,0 +1,25 @@
+---
+
+- name: Install Jackett
+  tags:
+    - setup-all
+    - setup-jackett
+    - install-all
+    - install-jackett
+  block:
+    - name: Run Jackett validation tasks
+      when: jackett_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
+
+    - name: Run Jackett installation tasks
+      when: jackett_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
+
+- name: Uninstall Jackett
+  tags:
+    - setup-all
+    - setup-jackett
+  block:
+    - name: Run Jackett uninstallation tasks
+      when: not jackett_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

@@ -1,0 +1,112 @@
+---
+
+# Project source code URL: https://github.com/Jackett/Jackett
+
+jackett_enabled: true
+
+jackett_identifier: jackett
+
+jackett_uid: ''
+jackett_gid: ''
+jackett_timezone: 'Etc/UTC'
+
+jackett_version: 0.22.1377
+jackett_arch: amd64
+
+# The hostname at which jackett is served.
+jackett_hostname: ''
+
+# The path at which jackett is served.
+# This value must either be `/` or not end with a slash (e.g. `/jackett`).
+jackett_path_prefix: /
+
+jackett_base_path: "{{ jackett_identifier }}"
+jackett_data_path: "{{ jackett_base_path }}/data"
+
+jackett_container_image: "{{ jackett_container_image_registry_prefix }}linuxserver/jackett:{{ jackett_container_image_tag }}"
+jackett_container_image_tag: "{{ jackett_version }}"
+jackett_container_image_registry_prefix: lscr.io/
+jackett_container_image_force_pull: "{{ jackett_container_image.endswith(':latest') }}"
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+jackett_container_network: "{{ jackett_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+jackett_container_additional_networks: "{{ (jackett_container_additional_networks_default + jackett_container_additional_networks_auto + jackett_container_additional_networks_custom) | unique }}"
+jackett_container_additional_networks_default: []
+jackett_container_additional_networks_auto: []
+jackett_container_additional_networks_custom: []
+
+# Controls how long to wait for the container to stop gracefully before killing it.
+# Because `devture_systemd_docker_base_container_stop_grace_time_seconds` may be quite short and databases are more important to stop gracefully,
+# we default to at least 30 seconds.
+jackett_container_stop_grace_time_seconds: "{{ [devture_systemd_docker_base_container_stop_grace_time_seconds, 30] | max }}"
+
+# List of systemd services that the Jackett systemd service depends on
+jackett_systemd_required_services_list: "{{ (jackett_systemd_required_services_list_default + jackett_systemd_required_services_list_auto + jackett_systemd_required_services_list_custom) | unique }}"
+jackett_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
+jackett_systemd_required_services_list_auto: []
+jackett_systemd_required_services_list_custom: []
+
+# List of systemd services that the Jackett systemd service wants
+jackett_systemd_wanted_services_list: "{{ (jackett_systemd_wanted_services_list_default + jackett_systemd_wanted_services_list_auto + jackett_systemd_wanted_services_list_custom) | unique }}"
+jackett_systemd_wanted_services_list_default: []
+jackett_systemd_wanted_services_list_auto: []
+jackett_systemd_wanted_services_list_custom: []
+
+# The port Jackett is running on inside the container
+jackett_container_http_port: 7878
+
+# Controls whether the container exposes a port (tcp/7878 in the container)
+# that can be used to access Jackett from outside the container
+#
+# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:7878"), or empty string to not expose.
+jackett_container_http_bind_port: ""
+
+# To inject your own other container labels, see `jackett_container_labels_additional_labels`.
+jackett_container_labels_traefik_enabled: true
+jackett_container_labels_traefik_docker_network: "{{ jackett_container_network }}"
+jackett_container_labels_traefik_hostname: "{{ jackett_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/jackett`).
+jackett_container_labels_traefik_path_prefix: "{{ jackett_path_prefix }}"
+jackett_container_labels_traefik_rule: "Host(`{{ jackett_container_labels_traefik_hostname }}`){% if jackett_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ jackett_container_labels_traefik_path_prefix }}`){% endif %}"
+jackett_container_labels_traefik_priority: 0
+jackett_container_labels_traefik_entrypoints: web-secure
+jackett_container_labels_traefik_tls: "{{ jackett_container_labels_traefik_entrypoints != 'web' }}"
+jackett_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+
+# jackett_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# See `../templates/labels.j2` for details.
+#
+# Example:
+# jackett_container_labels_additional_labels: |
+#   my.label=1
+#   another.label="here"
+jackett_container_labels_additional_labels: ''
+
+# jackett_container_additional_environment_variables contains a multiline string with additional environment variables to pass to the container.
+#
+# Example:
+# jackett_container_additional_environment_variables: |
+#   VAR=1
+#   ANOTHER=value
+jackett_container_additional_environment_variables: ''
+
+# A list of additional "volumes" to mount in the container.
+#
+# See the `--mount` documentation for the `docker run` command.
+#
+# Example:
+# jackett_container_additional_volumes:
+#   - type: bind
+#     src: /path/on/the/host
+#     dst: /data
+#   - type: bind
+#     src: /another-path/on/the/host
+#     dst: /read-only
+#     options: readonly
+jackett_container_additional_volumes: []
+
+# A list of extra arguments to pass to the container
+jackett_container_extra_arguments: []

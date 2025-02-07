@@ -1,0 +1,26 @@
+---
+
+- name: Check existence of Jackett systemd service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ jackett_identifier }}.service"
+  register: jackett_service_stat
+
+- name: Uninstall Jackett systemd services and files
+  when: jackett_service_stat.stat.exists | bool
+  block:
+    - name: Ensure Jackett systemd service is stopped
+      ansible.builtin.service:
+        name: "{{ jackett_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure Jackett systemd service does not exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ jackett_identifier }}.service"
+        state: absent
+
+    - name: Ensure Jackett path doesn't exist
+      ansible.builtin.file:
+        path: "{{ jackett_base_path }}"
+        state: absent
