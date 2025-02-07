@@ -56,12 +56,12 @@ jackett_systemd_wanted_services_list_auto: []
 jackett_systemd_wanted_services_list_custom: []
 
 # The port Jackett is running on inside the container
-jackett_container_http_port: 7878
+jackett_container_http_port: 9117
 
-# Controls whether the container exposes a port (tcp/7878 in the container)
+# Controls whether the container exposes a port (tcp/9117 in the container)
 # that can be used to access Jackett from outside the container
 #
-# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:7878"), or empty string to not expose.
+# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:9117"), or empty string to not expose.
 jackett_container_http_bind_port: ""
 
 # To inject your own other container labels, see `jackett_container_labels_additional_labels`.
