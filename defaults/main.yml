@@ -10,7 +10,7 @@ jackett_uid: ''
 jackett_gid: ''
 jackett_timezone: 'Etc/UTC'
 
-jackett_version: 0.22.1377
+jackett_version: 0.22.1660
 jackett_arch: amd64
 
 # The hostname at which jackett is served.
