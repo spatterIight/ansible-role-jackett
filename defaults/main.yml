@@ -10,7 +10,8 @@ jackett_uid: ''
 jackett_gid: ''
 jackett_timezone: 'Etc/UTC'
 
-jackett_version: 0.22.1660
+# renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
+jackett_version: 0.22.1891
 jackett_arch: amd64
 
 # The hostname at which jackett is served.
