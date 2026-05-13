@@ -21,40 +21,42 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/{{ item }}.j2"
     dest: "{{ jackett_base_path }}/{{ item }}"
+    mode: "0640"
     owner: "{{ jackett_uid }}"
     group: "{{ jackett_gid }}"
-    mode: "0640"
   with_items:
     - env
     - labels
+  register: jackett_support_files_result
 
 - name: Ensure Jackett container image is pulled via community.docker.docker_image_pull
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
   community.docker.docker_image_pull:
     name: "{{ jackett_container_image }}"
     pull: always
-  register: image_pull_result
+  register: jackett_container_image_pull_result_ansible_module
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: image_pull_result is not failed
+  until: jackett_container_image_pull_result_ansible_module is not failed
 
-- name: Ensure Jackett container image is pulled via command
+- name: Ensure Jackett container image is pulled via ansible.builtin.command
   when: devture_systemd_docker_base_container_image_pull_method == 'command'
   ansible.builtin.command:
     cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ jackett_container_image }}"
-  register: image_pull_result
+  register: jackett_container_image_pull_result_command
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: image_pull_result is not failed
-  changed_when: "'Downloaded newer image' in image_pull_result.stdout"
+  until: jackett_container_image_pull_result_command is not failed
+  changed_when: "'Downloaded newer image' in jackett_container_image_pull_result_command.stdout"
 
 - name: Ensure Jackett container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
-  community.general.docker_network:
+  community.docker.docker_network:
     enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
     name: "{{ jackett_container_network }}"
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
+  register: jackett_network_creation_result
 
 - name: Ensure Jackett container network is created via ansible.builtin.command
   when: devture_systemd_docker_base_container_network_creation_method == 'command'
@@ -64,12 +66,23 @@
       {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
       {{ devture_systemd_docker_base_container_networks_driver_options_string }}
       {{ jackett_container_network }}
-  register: network_creation_result
-  changed_when: network_creation_result.rc == 0
-  failed_when: network_creation_result.rc != 0 and 'already exists' not in network_creation_result.stderr
+  register: jackett_network_creation_result
+  changed_when: jackett_network_creation_result.rc == 0
+  failed_when: jackett_network_creation_result.rc != 0 and 'already exists' not in jackett_network_creation_result.stderr
 
-- name: Ensure Jackett systemd installed
+- name: Ensure Jackett systemd service is present
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/jackett.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ jackett_identifier }}.service"
     mode: "0644"
+  register: jackett_systemd_service_result
+
+- name: Determine whether Jackett needs a restart
+  ansible.builtin.set_fact:
+    jackett_restart_necessary: >-
+      {{
+        jackett_support_files_result.changed | default(false)
+        or jackett_systemd_service_result.changed | default(false)
+        or jackett_container_image_pull_result_ansible_module.changed | default(false)
+        or jackett_container_image_pull_result_command.changed | default(false)
+      }}
