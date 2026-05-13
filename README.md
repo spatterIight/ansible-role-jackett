@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025, 2026 spatterIight
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 # Jackett Ansible role
 
 This is an [Ansible](https://www.ansible.com/) role which installs [Jackett](https://github.com/Jackett/Jackett) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
