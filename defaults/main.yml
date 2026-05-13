@@ -15,15 +15,15 @@ jackett_enabled: true
 
 jackett_identifier: jackett
 
-jackett_uid: ''
-jackett_gid: ''
+jackett_uid: ""
+jackett_gid: ""
 
 # renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
 jackett_version: 0.24.1622
 jackett_arch: amd64
 
 # The hostname at which jackett is served.
-jackett_hostname: ''
+jackett_hostname: ""
 
 # The path at which jackett is served.
 # This value must either be `/` or not end with a slash (e.g. `/jackett`).
@@ -86,7 +86,7 @@ jackett_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 # jackett_container_labels_additional_labels: |
 #   my.label=1
 #   another.label="here"
-jackett_container_labels_additional_labels: ''
+jackett_container_labels_additional_labels: ""
 
 # A list of additional "volumes" to mount in the container.
 #
@@ -138,7 +138,7 @@ jackett_container_cleanup_command: |
   exit 1
 
 # Specify the timezone
-jackett_timezone: 'Etc/UTC'
+jackett_timezone: "Etc/UTC"
 
 # jackett_environment_variables_additional_variables contains a multiline string with additional environment variables to pass to the container.
 #
@@ -146,7 +146,7 @@ jackett_timezone: 'Etc/UTC'
 # jackett_environment_variables_additional_variables: |
 #   VAR=1
 #   ANOTHER=value
-jackett_environment_variables_additional_variables: ''
+jackett_environment_variables_additional_variables: ""
 
 # jackett_restart_necessary controls whether the Jackett systemd
 # service will be restarted (when true) or merely started (when false) by the
