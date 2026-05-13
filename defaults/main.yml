@@ -37,9 +37,6 @@ jackett_container_image_registry_prefix: "{{ jackett_container_image_registry_pr
 jackett_container_image_registry_prefix_upstream: "{{ jackett_container_image_registry_prefix_upstream_default }}"
 jackett_container_image_registry_prefix_upstream_default: lscr.io/
 
-# The base container network. It will be auto-created by this role if it doesn't exist already.
-jackett_container_network: "{{ jackett_identifier }}"
-
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
 jackett_container_additional_networks: "{{ (jackett_container_additional_networks_default + jackett_container_additional_networks_auto + jackett_container_additional_networks_custom) | unique }}"
@@ -58,6 +55,12 @@ jackett_systemd_wanted_services_list: "{{ (jackett_systemd_wanted_services_list_
 jackett_systemd_wanted_services_list_default: []
 jackett_systemd_wanted_services_list_auto: []
 jackett_systemd_wanted_services_list_custom: []
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+jackett_container_network: "{{ jackett_identifier }}"
+
+# Control if the container network is deleted on uninstalling.
+jackett_container_network_deletion_enabled: true
 
 # The port Jackett is running on inside the container
 jackett_container_http_port: 9117
