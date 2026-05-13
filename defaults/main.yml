@@ -14,13 +14,15 @@
 jackett_enabled: true
 
 jackett_identifier: jackett
-
-jackett_uid: ""
-jackett_gid: ""
+jackett_base_path: "/{{ jackett_identifier }}"
+jackett_data_path: "{{ jackett_base_path }}/data"
 
 # renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
 jackett_version: 0.24.1622
 jackett_arch: amd64
+
+jackett_uid: ""
+jackett_gid: ""
 
 # The hostname at which jackett is served.
 jackett_hostname: ""
@@ -28,9 +30,6 @@ jackett_hostname: ""
 # The path at which jackett is served.
 # This value must either be `/` or not end with a slash (e.g. `/jackett`).
 jackett_path_prefix: /
-
-jackett_base_path: "{{ jackett_identifier }}"
-jackett_data_path: "{{ jackett_base_path }}/data"
 
 jackett_container_image: "{{ jackett_container_image_registry_prefix }}linuxserver/jackett:{{ jackett_container_image_tag }}"
 jackett_container_image_tag: "{{ jackett_version }}"
