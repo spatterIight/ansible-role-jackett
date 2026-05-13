@@ -31,7 +31,6 @@ jackett_data_path: "{{ jackett_base_path }}/data"
 jackett_container_image: "{{ jackett_container_image_registry_prefix }}linuxserver/jackett:{{ jackett_container_image_tag }}"
 jackett_container_image_tag: "{{ jackett_version }}"
 jackett_container_image_registry_prefix: lscr.io/
-jackett_container_image_force_pull: "{{ jackett_container_image.endswith(':latest') }}"
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 jackett_container_network: "{{ jackett_identifier }}"
