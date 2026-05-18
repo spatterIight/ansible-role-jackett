@@ -1,5 +1,10 @@
----
+# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2025, 2026 spatterIight
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
+---
 - name: Check existence of Jackett systemd service
   ansible.builtin.stat:
     path: "{{ devture_systemd_docker_base_systemd_path }}/{{ jackett_identifier }}.service"
@@ -20,7 +25,61 @@
         path: "{{ devture_systemd_docker_base_systemd_path }}/{{ jackett_identifier }}.service"
         state: absent
 
-    - name: Ensure Jackett path doesn't exist
+    - name: Ensure Jackett support files do not exist
       ansible.builtin.file:
-        path: "{{ jackett_base_path }}"
+        path: "{{ jackett_base_path }}/{{ item }}"
         state: absent
+      with_items:
+        - env
+        - labels
+
+    - name: Ensure Jackett local data path does not exist if empty
+      ansible.builtin.command:
+        cmd: "rmdir {{ jackett_data_path }}"
+      register: jackett_data_path_deletion_result
+      changed_when: jackett_data_path_deletion_result.rc == 0
+      failed_when: false
+
+    - name: Ensure Jackett base path does not exist if empty
+      ansible.builtin.command:
+        cmd: "rmdir {{ jackett_base_path }}"
+      register: jackett_base_path_deletion_result
+      changed_when: jackett_base_path_deletion_result.rc == 0
+      failed_when: false
+
+    - name: Ensure Jackett container network does not exist
+      when: jackett_container_network_deletion_enabled
+      block:
+        - name: Ensure Jackett container network does not exist via community.docker.docker_network
+          when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+          community.docker.docker_network:
+            name: "{{ jackett_container_network }}"
+            state: absent
+          register: jackett_network_deletion_result
+
+        - name: Ensure Jackett container network does not exist via ansible.builtin.command
+          when: devture_systemd_docker_base_container_network_creation_method == 'command'
+          ansible.builtin.command:
+            cmd: >-
+              {{ devture_systemd_docker_base_host_command_docker }} network rm
+              {{ jackett_container_network }}
+          register: jackett_network_deletion_result
+          changed_when: jackett_container_network in jackett_network_deletion_result.stdout
+
+- name: Check existence of Jackett local data path
+  ansible.builtin.stat:
+    path: "{{ jackett_data_path }}"
+  register: jackett_data_path_stat
+
+# We just want to notify the user. Deleting data is too destructive.
+- name: Inject the message about the remaining Jackett local data path
+  when: jackett_data_path_stat.stat.exists | bool
+  ansible.builtin.set_fact:
+    devture_playbook_runtime_messages_list: |
+      {{
+        devture_playbook_runtime_messages_list | default([])
+        +
+        [
+          "Note: As the local Jackett instance has been removed, some old data remains in `" + jackett_data_path + "`. Feel free to delete it."
+        ]
+      }}

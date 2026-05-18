@@ -1,3 +1,12 @@
+# SPDX-FileCopyrightText: 2023, 2024 Nikita Chernyi
+# SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2024 Sergio Durigan Junior
+# SPDX-FileCopyrightText: 2025 MASH project contributors
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2025, 2026 spatterIight
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ---
 
 # Project source code URL: https://github.com/Jackett/Jackett
@@ -5,32 +14,28 @@
 jackett_enabled: true
 
 jackett_identifier: jackett
-
-jackett_uid: ''
-jackett_gid: ''
-jackett_timezone: 'Etc/UTC'
+jackett_base_path: "/{{ jackett_identifier }}"
+jackett_data_path: "{{ jackett_base_path }}/data"
 
 # renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
 jackett_version: 0.24.1622
 jackett_arch: amd64
 
+jackett_uid: ""
+jackett_gid: ""
+
 # The hostname at which jackett is served.
-jackett_hostname: ''
+jackett_hostname: ""
 
 # The path at which jackett is served.
 # This value must either be `/` or not end with a slash (e.g. `/jackett`).
 jackett_path_prefix: /
 
-jackett_base_path: "{{ jackett_identifier }}"
-jackett_data_path: "{{ jackett_base_path }}/data"
-
 jackett_container_image: "{{ jackett_container_image_registry_prefix }}linuxserver/jackett:{{ jackett_container_image_tag }}"
 jackett_container_image_tag: "{{ jackett_version }}"
-jackett_container_image_registry_prefix: lscr.io/
-jackett_container_image_force_pull: "{{ jackett_container_image.endswith(':latest') }}"
-
-# The base container network. It will be auto-created by this role if it doesn't exist already.
-jackett_container_network: "{{ jackett_identifier }}"
+jackett_container_image_registry_prefix: "{{ jackett_container_image_registry_prefix_upstream }}"
+jackett_container_image_registry_prefix_upstream: "{{ jackett_container_image_registry_prefix_upstream_default }}"
+jackett_container_image_registry_prefix_upstream_default: lscr.io/
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
@@ -38,11 +43,6 @@ jackett_container_additional_networks: "{{ (jackett_container_additional_network
 jackett_container_additional_networks_default: []
 jackett_container_additional_networks_auto: []
 jackett_container_additional_networks_custom: []
-
-# Controls how long to wait for the container to stop gracefully before killing it.
-# Because `devture_systemd_docker_base_container_stop_grace_time_seconds` may be quite short and databases are more important to stop gracefully,
-# we default to at least 30 seconds.
-jackett_container_stop_grace_time_seconds: "{{ [devture_systemd_docker_base_container_stop_grace_time_seconds, 30] | max }}"
 
 # List of systemd services that the Jackett systemd service depends on
 jackett_systemd_required_services_list: "{{ (jackett_systemd_required_services_list_default + jackett_systemd_required_services_list_auto + jackett_systemd_required_services_list_custom) | unique }}"
@@ -55,6 +55,12 @@ jackett_systemd_wanted_services_list: "{{ (jackett_systemd_wanted_services_list_
 jackett_systemd_wanted_services_list_default: []
 jackett_systemd_wanted_services_list_auto: []
 jackett_systemd_wanted_services_list_custom: []
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+jackett_container_network: "{{ jackett_identifier }}"
+
+# Control if the container network is deleted on uninstalling.
+jackett_container_network_deletion_enabled: true
 
 # The port Jackett is running on inside the container
 jackett_container_http_port: 9117
@@ -84,15 +90,7 @@ jackett_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 # jackett_container_labels_additional_labels: |
 #   my.label=1
 #   another.label="here"
-jackett_container_labels_additional_labels: ''
-
-# jackett_container_additional_environment_variables contains a multiline string with additional environment variables to pass to the container.
-#
-# Example:
-# jackett_container_additional_environment_variables: |
-#   VAR=1
-#   ANOTHER=value
-jackett_container_additional_environment_variables: ''
+jackett_container_labels_additional_labels: ""
 
 # A list of additional "volumes" to mount in the container.
 #
@@ -111,3 +109,55 @@ jackett_container_additional_volumes: []
 
 # A list of extra arguments to pass to the container
 jackett_container_extra_arguments: []
+
+# Controls how long to wait for the container to stop gracefully before killing it.
+jackett_container_stop_grace_time_seconds: "{{ devture_systemd_docker_base_container_stop_grace_time_seconds }}"
+
+# Controls how long the pre-start cleanup should wait for stale container-name release
+# before failing startup explicitly.
+jackett_container_cleanup_timeout_seconds: "{{ devture_systemd_docker_base_container_cleanup_timeout_seconds }}"
+
+# Controls the delay between pre-start cleanup retries.
+jackett_container_cleanup_retry_delay_seconds: "{{ devture_systemd_docker_base_container_cleanup_retry_delay_seconds }}"
+
+# Shell command used in the systemd pre-start phase to deterministically remove a stale
+# container and wait until Docker releases its name.
+jackett_container_cleanup_command: |
+  i=0;
+  while [ "$i" -lt {{ jackett_container_cleanup_timeout_seconds }} ]; do
+  {{ devture_systemd_docker_base_host_command_docker }} stop -t {{ jackett_container_stop_grace_time_seconds }} {{ jackett_identifier }} >/dev/null 2>&1 || true;
+  {{ devture_systemd_docker_base_host_command_docker }} rm -f {{ jackett_identifier }} >/dev/null 2>&1 || true;
+  if {{ devture_systemd_docker_base_host_command_docker }} container inspect {{ jackett_identifier }} >/dev/null 2>&1; then
+  i=$((i + 1));
+  sleep {{ jackett_container_cleanup_retry_delay_seconds }};
+  continue;
+  fi;
+  if {{ devture_systemd_docker_base_host_command_docker }} info >/dev/null 2>&1; then
+  exit 0;
+  fi;
+  echo "Failed to query Docker daemon while cleaning up {{ jackett_identifier }}" >&2;
+  exit 1;
+  done;
+  echo "Failed to remove stale container {{ jackett_identifier }} after {{ jackett_container_cleanup_timeout_seconds }} attempts" >&2;
+  exit 1
+
+# Specify the timezone
+jackett_timezone: "Etc/UTC"
+
+# jackett_environment_variables_additional_variables contains a multiline string with additional environment variables to pass to the container.
+#
+# Example:
+# jackett_environment_variables_additional_variables: |
+#   VAR=1
+#   ANOTHER=value
+jackett_environment_variables_additional_variables: ""
+
+# jackett_restart_necessary controls whether the Jackett systemd
+# service will be restarted (when true) or merely started (when false) by the
+# systemd service manager role (when conditional restart is enabled).
+#
+# This value is automatically computed during installation based on whether
+# any configuration files, the systemd service file, or the container image changed.
+# The default of `false` means "no restart needed" — appropriate when the role's
+# installation tasks haven't run (e.g., due to --tags skipping them).
+jackett_restart_necessary: false
