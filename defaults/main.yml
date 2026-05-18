@@ -18,7 +18,7 @@ jackett_base_path: "/{{ jackett_identifier }}"
 jackett_data_path: "{{ jackett_base_path }}/data"
 
 # renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
-jackett_version: 0.24.1622
+jackett_version: 0.24.1870
 jackett_arch: amd64
 
 jackett_uid: ""
