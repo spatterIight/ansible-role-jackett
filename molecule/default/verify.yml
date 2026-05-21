@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 spatterlight
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for jackett service to become active (up to 180s)
+      ansible.builtin.systemd:
+        name: jackett.service
+      register: svc
+      until: svc.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert jackett service is active
+      ansible.builtin.assert:
+        that: svc.status.ActiveState == 'active'
+        fail_msg: "jackett.service not active ({{ svc.status.ActiveState }})"
+        success_msg: "jackett.service is active"
+
+    - name: Wait for jackett HTTP endpoint to respond (up to 10m)
+      ansible.builtin.uri:
+        url: "http://localhost:9117/UI/Dashboard"
+        method: GET
+        status_code: [200]
+      register: ep
+      until: ep.status == 200
+      retries: 120
+      delay: 5
+
+    - name: Assert jackett HTTP endpoint responds
+      ansible.builtin.assert:
+        that: ep.status == 200
+        fail_msg: "jackett did not respond as expected ({{ ep.status | default('no response') }})"
+        success_msg: "jackett responded with {{ ep.status }}"
+
+    - name: Show service status summary
+      ansible.builtin.debug:
+        msg:
+          - "jackett systemd: {{ svc.status.ActiveState }}"
+          - "jackett HTTP: {{ ep.status }}"
