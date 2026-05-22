@@ -24,10 +24,10 @@ jackett_arch: amd64
 jackett_uid: ""
 jackett_gid: ""
 
-# The hostname at which jackett is served.
+# The hostname at which Jackett is served.
 jackett_hostname: ""
 
-# The path at which jackett is served.
+# The path at which Jackett is served.
 # This value must either be `/` or not end with a slash (e.g. `/jackett`).
 jackett_path_prefix: /
 
