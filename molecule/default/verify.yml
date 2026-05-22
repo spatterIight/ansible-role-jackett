@@ -3,43 +3,43 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Verify
+- name: Verify Jackett systemd service
   hosts: all
   become: true
   gather_facts: false
   tasks:
-    - name: Wait for jackett service to become active (up to 180s)
+    - name: Wait for Jackett service to become active (up to 180s)
       ansible.builtin.systemd:
         name: jackett.service
-      register: svc
-      until: svc.status.ActiveState == 'active'
+      register: jackett_service
+      until: jackett_service.status.ActiveState == 'active'
       retries: 36
       delay: 5
 
-    - name: Assert jackett service is active
+    - name: Assert Jackett service is active
       ansible.builtin.assert:
-        that: svc.status.ActiveState == 'active'
-        fail_msg: "jackett.service not active ({{ svc.status.ActiveState }})"
+        that: jackett_service.status.ActiveState == 'active'
+        fail_msg: "jackett.service not active ({{ jackett_service.status.ActiveState }})"
         success_msg: "jackett.service is active"
 
-    - name: Wait for jackett HTTP endpoint to respond (up to 10m)
+    - name: Wait for Jackett HTTP endpoint to respond (up to 10m)
       ansible.builtin.uri:
         url: "http://localhost:9117/UI/Dashboard"
         method: GET
         status_code: [200]
-      register: ep
-      until: ep.status == 200
+      register: jackett_endpoint
+      until: jackett_endpoint.status == 200
       retries: 120
       delay: 5
 
-    - name: Assert jackett HTTP endpoint responds
+    - name: Assert Jackett HTTP endpoint responds
       ansible.builtin.assert:
-        that: ep.status == 200
-        fail_msg: "jackett did not respond as expected ({{ ep.status | default('no response') }})"
-        success_msg: "jackett responded with {{ ep.status }}"
+        that: jackett_endpoint.status == 200
+        fail_msg: "Jackett did not respond as expected ({{ jackett_endpoint.status | default('no response') }})"
+        success_msg: "Jackett responded with {{ jackett_endpoint.status }}"
 
-    - name: Show service status summary
+    - name: Show Jackett systemd service status summary
       ansible.builtin.debug:
         msg:
-          - "jackett systemd: {{ svc.status.ActiveState }}"
-          - "jackett HTTP: {{ ep.status }}"
+          - "Jackett systemd: {{ jackett_service.status.ActiveState }}"
+          - "Jackett HTTP: {{ jackett_endpoint.status }}"
