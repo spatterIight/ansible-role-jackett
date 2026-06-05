@@ -4,7 +4,7 @@ galaxy_info:
   company: spatterlight
   role_name: jackett
   namespace: spatterlight
-  description: An Ansible role for installing Jackett, an API for your favorite torrent trackers
+  description: An Ansible role for installing Jackett, an API for your favorite Torrent trackers
   platforms:
     - name: Debian
       versions:
