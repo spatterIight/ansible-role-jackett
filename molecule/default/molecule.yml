@@ -28,6 +28,10 @@ provisioner:
   inventory:
     group_vars:
       all:
+        # Helper variables
+        jackett_debug_service_enabled: false
+
+        # Variables for Jackett
         jackett_uid: 1000
         jackett_gid: 1000
         jackett_hostname: jackett
