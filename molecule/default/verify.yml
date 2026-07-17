@@ -22,6 +22,12 @@
         fail_msg: "jackett.service not active ({{ jackett_service.status.ActiveState }})"
         success_msg: "jackett.service is active"
 
+    - name: Retrieve Jackett service log for debugging
+      when: jackett_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu jackett.service
+      changed_when: false
+
     - name: Wait for Jackett HTTP endpoint to respond (up to 10m)
       ansible.builtin.uri:
         url: "http://localhost:9117/UI/Dashboard"
