@@ -73,7 +73,13 @@ jackett_container_network: "{{ jackett_identifier }}"
 # Control if the container network is deleted on uninstalling.
 jackett_container_network_deletion_enabled: true
 
-# The port Jackett is running on inside the container
+# The port Jackett is running on inside the container.
+#
+# This describes the container image, it does not configure it. Jackett takes its listening port
+# from `Port` in the `ServerConfig.json` file it maintains itself, and the container's own readiness
+# check is hardcoded to `nc -z localhost 9117`, so a container that listened anywhere else would
+# never be reported as started. Changing this value only moves the Traefik label and the port
+# published by `jackett_container_http_bind_port` away from where Jackett actually listens.
 jackett_container_http_port: 9117
 
 # Controls whether the container exposes a port (tcp/9117 in the container)
