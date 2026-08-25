@@ -1,6 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Patch-level bumps are automerged. Jackett keeps no database and no migrations - its entire state is a handful of JSON files it rewrites in place - and the Molecule scenario asserts that the container a bump produced reports exactly the version this repository pins.",
+    "Under `semver` every Jackett release arrives as a patch, because the leading `0.24` moves roughly once a year; the minor bump that does move it still becomes a pull request for a human to look at."
+  ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.0.0",
+    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.0.0"
   ]
 }
