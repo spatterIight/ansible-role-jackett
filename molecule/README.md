@@ -47,7 +47,26 @@ Currently there is one testing scenario available.
 
 ### `default`
 
-Tests a standard Jackett installation.
+Installs Jackett and then checks that the installation is real rather than merely present.
+
+The scenario deliberately configures the role with values nothing else would produce - uid/gid `1717`, the timezone `Asia/Tokyo`, the hostname `jackett.molecule.local`, the path prefix `/jackett-ui`, an extra read-only bind mount, an extra label and an extra container argument - and then looks for each of them on the running container.
+
+It asserts, in order:
+
+- the systemd unit is active. On its own this proves very little: the unit is `Restart=always`, so a container that crash-loops still reports `active`. It is a gate, not a result.
+- Jackett answers its own `/health` endpoint
+- the role's data path is bind-mounted at `/config`, and `jackett_container_additional_volumes` really became a `--mount`, read-only option included
+- the container runs as `1717:1717` and carries the matching `PUID`/`PGID`
+- `TZ` reached the container, **and** the process inside it reports the matching zone - the environment file alone would not prove that Jackett uses it
+- the image is the tag `jackett_version` pins, and its `org.opencontainers.image.version` label belongs to that same version
+- the Traefik labels carry the configured hostname, path prefix, both middlewares and port 9117; the additional label and the extra argument arrive too
+- **Jackett's own log reports the version `defaults/main.yml` pins.** This is the assertion that lets Renovate automerge a patch bump: the bumped image has to be the one that ran.
+- Jackett finished loading its indexer definitions, which happens after Kestrel starts listening
+- the Torznab API serves a capabilities document to the API key Jackett wrote onto the mounted data path
+
+The last check has a negative control next to it, because Jackett answers `200` to an unauthenticated Torznab call as well - it puts an `<error code="100" description="Invalid API Key" />` document in the body instead. The scenario makes the same call without a key and requires it to be rejected, so that the authenticated assertion cannot pass against an instance that refuses everything.
+
+The API key is a real credential, so the tasks that read and use it are `no_log`.
 
 ## Running
 
