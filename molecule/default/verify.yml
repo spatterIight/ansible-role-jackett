@@ -22,13 +22,13 @@
     jackett_expected_timezone_abbreviation: JST
 
   tasks:
-    # `jackett_version` is a plain literal, which is what Renovate bumps and
-    # what bin/compute-next-tag.sh reads. Loading the file under a name of its
-    # own keeps it from outranking the scenario's group_vars.
-    - name: Read the role's own defaults
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
+    - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: jackett_role_defaults
+        name: jackett_defaults
 
     - name: Wait for the Jackett systemd service to report itself active
       ansible.builtin.systemd_service:
