@@ -167,10 +167,10 @@
     - name: Assert that the container image is the pinned version
       ansible.builtin.assert:
         that:
-          - jackett_container.Config.Image == 'lscr.io/linuxserver/jackett:' ~ jackett_role_defaults.jackett_version
+          - jackett_container.Config.Image == 'lscr.io/linuxserver/jackett:' ~ jackett_defaults.jackett_version
         fail_msg: >-
           The container runs {{ jackett_container.Config.Image }}, not the
-          {{ jackett_role_defaults.jackett_version }} pinned in defaults/main.yml
+          {{ jackett_defaults.jackett_version }} pinned in defaults/main.yml
         success_msg: "The container runs {{ jackett_container.Config.Image }}"
 
     # linuxserver.io stamps its own build onto the image as
@@ -261,12 +261,12 @@
       ansible.builtin.assert:
         that:
           - jackett_logged_versions | length > 0
-          - jackett_logged_versions | last == jackett_role_defaults.jackett_version
+          - jackett_logged_versions | last == jackett_defaults.jackett_version
         fail_msg: >-
           Jackett logged version
           {{ jackett_logged_versions | default([]) | last | default('none') }},
-          but defaults/main.yml pins {{ jackett_role_defaults.jackett_version }}
-        success_msg: "Jackett reports itself as v{{ jackett_role_defaults.jackett_version }}"
+          but defaults/main.yml pins {{ jackett_defaults.jackett_version }}
+        success_msg: "Jackett reports itself as v{{ jackett_defaults.jackett_version }}"
 
     # Kestrel answers /health as soon as it is listening, which happens before
     # the indexer definitions have been read.
