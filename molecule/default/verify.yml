@@ -74,7 +74,7 @@
           - (jackett_health.json | default({})).status | default('') == 'OK'
         fail_msg: >-
           Jackett's health endpoint answered
-          {{ jackett_health.status | default('nothing') }}
+          {{ jackett_health.status | default('none') }}
           ({{ jackett_health.content | default('') | truncate(200) }})
         success_msg: "Jackett reports itself healthy"
 
