@@ -93,12 +93,12 @@
     - name: Inspect the Jackett container
       ansible.builtin.command:
         cmd: docker container inspect jackett
-      register: jackett_container_inspect
+      register: jackett_container_raw
       changed_when: false
 
     - name: Parse the Jackett container definition
       ansible.builtin.set_fact:
-        jackett_container: "{{ (jackett_container_inspect.stdout | from_json)[0] }}"
+        jackett_container: "{{ (jackett_container_raw.stdout | from_json)[0] }}"
 
     - name: Collect the mounts the role asked for
       ansible.builtin.set_fact:
