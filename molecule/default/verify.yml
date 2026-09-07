@@ -30,28 +30,31 @@
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: jackett_defaults
 
-    - name: Wait for the Jackett systemd service to report itself active
+    - name: Wait for the Jackett systemd service to become active (up to 180s)
       ansible.builtin.systemd_service:
         name: jackett.service
-      register: jackett_service_state
-      # `Restart=always` makes a crash-looping unit look active, so this is
-      # only a cheap gate in front of the checks that follow, never a result.
-      # Paired with failed_when, so that a unit that never comes up fails on
-      # the assertion below rather than on the bare wait.
+      register: jackett_service
+      until: jackett_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+      # So that giving up is reported by the assertion below rather than as a
+      # wall of systemd unit properties.
       failed_when: false
-      until: (jackett_service_state.status | default({})).ActiveState | default('') == 'active'
-      retries: 30
-      delay: 2
 
-    - name: Assert that the Jackett systemd service is active
+    # `Restart=always` in the systemd unit means that even a container which crashes
+    # and gets restarted reads as active here, so this is a precondition rather than
+    # a result.
+    - name: Assert the Jackett systemd service is active
       ansible.builtin.assert:
-        that:
-          - (jackett_service_state.status | default({})).ActiveState | default('') == 'active'
-        fail_msg: >-
-          jackett.service is
-          {{ (jackett_service_state.status | default({})).ActiveState | default('missing') }},
-          not active
+        that: jackett_service.status.ActiveState == 'active'
+        fail_msg: "jackett.service is not active ({{ jackett_service.status.ActiveState }})"
         success_msg: "jackett.service is active"
+
+    - name: Retrieve the Jackett systemd service log for debugging
+      when: jackett_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu jackett.service
+      changed_when: false
 
     # Jackett's own health endpoint. It needs no authentication, it is served
     # by Jackett rather than by anything the container's init puts in front of
