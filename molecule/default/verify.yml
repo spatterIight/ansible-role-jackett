@@ -53,7 +53,7 @@
     - name: Retrieve the Jackett systemd service log for debugging
       when: jackett_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: journalctl -xeu jackett.service
+        cmd: journalctl --no-pager --output=cat --unit=jackett.service
       changed_when: false
 
     # Jackett's own health endpoint. It needs no authentication, it is served
