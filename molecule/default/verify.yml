@@ -24,319 +24,319 @@
   tasks:
     - name: Verify that Jackett works
       block:
-    # The role is not included in this playbook, so its defaults are not in
-    # scope. Reading defaults/main.yml directly ties the version assertion
-    # below.
-    - name: Load the role defaults
-      ansible.builtin.include_vars:
-        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: jackett_defaults
+        # The role is not included in this playbook, so its defaults are not in
+        # scope. Reading defaults/main.yml directly ties the version assertion
+        # below.
+        - name: Load the role defaults
+          ansible.builtin.include_vars:
+            file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+            name: jackett_defaults
 
-    - name: Wait for the Jackett systemd service to become active (up to 180s)
-      ansible.builtin.systemd_service:
-        name: jackett.service
-      register: jackett_service
-      until: jackett_service.status.ActiveState == 'active'
-      retries: 36
-      delay: 5
-      # So that giving up is reported by the assertion below rather than as a
-      # wall of systemd unit properties.
-      failed_when: false
+        - name: Wait for the Jackett systemd service to become active (up to 180s)
+          ansible.builtin.systemd_service:
+            name: jackett.service
+          register: jackett_service
+          until: jackett_service.status.ActiveState == 'active'
+          retries: 36
+          delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
-    # `Restart=always` in the systemd unit means that even a container which crashes
-    # and gets restarted reads as active here, so this is a precondition rather than
-    # a result.
-    - name: Assert the Jackett systemd service is active
-      ansible.builtin.assert:
-        that: jackett_service.status.ActiveState == 'active'
-        fail_msg: "jackett.service is not active ({{ jackett_service.status.ActiveState }})"
-        success_msg: "jackett.service is active"
+        # `Restart=always` in the systemd unit means that even a container which crashes
+        # and gets restarted reads as active here, so this is a precondition rather than
+        # a result.
+        - name: Assert the Jackett systemd service is active
+          ansible.builtin.assert:
+            that: jackett_service.status.ActiveState == 'active'
+            fail_msg: "jackett.service is not active ({{ jackett_service.status.ActiveState }})"
+            success_msg: "jackett.service is active"
 
-    - name: Retrieve the Jackett systemd service log for debugging
-      when: jackett_debug_service_enabled | bool
-      ansible.builtin.command:
-        cmd: journalctl --no-pager --output=cat --unit=jackett.service
-      changed_when: false
+        - name: Retrieve the Jackett systemd service log for debugging
+          when: jackett_debug_service_enabled | bool
+          ansible.builtin.command:
+            cmd: journalctl --no-pager --output=cat --unit=jackett.service
+          changed_when: false
 
-    # Jackett's own health endpoint. It needs no authentication, it is served
-    # by Jackett rather than by anything the container's init puts in front of
-    # it, and it only answers once Kestrel is listening.
-    - name: Wait for Jackett to answer its health endpoint
-      ansible.builtin.uri:
-        url: http://127.0.0.1:9117/health
-        follow_redirects: none
-        return_content: true
-      register: jackett_health
-      failed_when: false
-      until: jackett_health.status | default(0) == 200
-      retries: 90
-      delay: 2
+        # Jackett's own health endpoint. It needs no authentication, it is served
+        # by Jackett rather than by anything the container's init puts in front of
+        # it, and it only answers once Kestrel is listening.
+        - name: Wait for Jackett to answer its health endpoint
+          ansible.builtin.uri:
+            url: http://127.0.0.1:9117/health
+            follow_redirects: none
+            return_content: true
+          register: jackett_health
+          failed_when: false
+          until: jackett_health.status | default(0) == 200
+          retries: 90
+          delay: 2
 
-    - name: Assert that Jackett reports itself healthy
-      ansible.builtin.assert:
-        that:
-          - jackett_health.status | default(0) == 200
-          - (jackett_health.json | default({})).status | default('') == 'OK'
-        fail_msg: >-
-          Jackett's health endpoint answered
-          {{ jackett_health.status | default('none') }}
-          ({{ jackett_health.content | default('') | truncate(200) }})
-        success_msg: "Jackett reports itself healthy"
+        - name: Assert that Jackett reports itself healthy
+          ansible.builtin.assert:
+            that:
+              - jackett_health.status | default(0) == 200
+              - (jackett_health.json | default({})).status | default('') == 'OK'
+            fail_msg: >-
+              Jackett's health endpoint answered
+              {{ jackett_health.status | default('none') }}
+              ({{ jackett_health.content | default('') | truncate(200) }})
+            success_msg: "Jackett reports itself healthy"
 
-    - name: Retrieve the Jackett service log for debugging
-      when: jackett_debug_service_enabled | bool
-      ansible.builtin.command:
-        cmd: journalctl -xeu jackett.service
-      changed_when: false
+        - name: Retrieve the Jackett service log for debugging
+          when: jackett_debug_service_enabled | bool
+          ansible.builtin.command:
+            cmd: journalctl -xeu jackett.service
+          changed_when: false
 
-    # ------------------------------------------------------------------
-    # What the role told Docker to run
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # What the role told Docker to run
+        # ------------------------------------------------------------------
 
-    # `docker container inspect`, never a bare `docker inspect`: the latter
-    # also matches networks, and this role creates a network called `jackett`.
-    - name: Inspect the Jackett container
-      ansible.builtin.command:
-        cmd: docker container inspect jackett
-      register: jackett_container_raw
-      changed_when: false
+        # `docker container inspect`, never a bare `docker inspect`: the latter
+        # also matches networks, and this role creates a network called `jackett`.
+        - name: Inspect the Jackett container
+          ansible.builtin.command:
+            cmd: docker container inspect jackett
+          register: jackett_container_raw
+          changed_when: false
 
-    - name: Parse the Jackett container definition
-      ansible.builtin.set_fact:
-        jackett_container: "{{ (jackett_container_raw.stdout | from_json)[0] }}"
+        - name: Parse the Jackett container definition
+          ansible.builtin.set_fact:
+            jackett_container: "{{ (jackett_container_raw.stdout | from_json)[0] }}"
 
-    - name: Collect the mounts the role asked for
-      ansible.builtin.set_fact:
-        jackett_config_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/config') | list }}"
-        jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/extra') | list }}"
+        - name: Collect the mounts the role asked for
+          ansible.builtin.set_fact:
+            jackett_config_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/config') | list }}"
+            jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/extra') | list }}"
 
-    - name: Assert that the role's data path is mounted at /config
-      ansible.builtin.assert:
-        that:
-          - jackett_config_mount | length == 1
-          - jackett_config_mount[0].Type == 'bind'
-          - jackett_config_mount[0].RW
-        fail_msg: "The role's data path is not bind-mounted at /config: {{ jackett_container.Mounts }}"
-        success_msg: "{{ jackett_config_mount[0].Source | default('?') }} is bind-mounted at /config"
+        - name: Assert that the role's data path is mounted at /config
+          ansible.builtin.assert:
+            that:
+              - jackett_config_mount | length == 1
+              - jackett_config_mount[0].Type == 'bind'
+              - jackett_config_mount[0].RW
+            fail_msg: "The role's data path is not bind-mounted at /config: {{ jackett_container.Mounts }}"
+            success_msg: "{{ jackett_config_mount[0].Source | default('?') }} is bind-mounted at /config"
 
-    # jackett_container_additional_volumes has been inert in several roles in
-    # this collection - rendered into a comment, or into a `-v` that silently
-    # dropped the options. Both the destination and the readonly option have
-    # to arrive.
-    - name: Assert that jackett_container_additional_volumes reached the container
-      ansible.builtin.assert:
-        that:
-          - jackett_extra_mount | length == 1
-          - jackett_extra_mount[0].Type == 'bind'
-          - jackett_extra_mount[0].Source == '/jackett-molecule-extra'
-          - not jackett_extra_mount[0].RW
-        fail_msg: "The additional volume did not reach the container: {{ jackett_container.Mounts }}"
-        success_msg: "The additional volume is mounted read-only at /extra"
+        # jackett_container_additional_volumes has been inert in several roles in
+        # this collection - rendered into a comment, or into a `-v` that silently
+        # dropped the options. Both the destination and the readonly option have
+        # to arrive.
+        - name: Assert that jackett_container_additional_volumes reached the container
+          ansible.builtin.assert:
+            that:
+              - jackett_extra_mount | length == 1
+              - jackett_extra_mount[0].Type == 'bind'
+              - jackett_extra_mount[0].Source == '/jackett-molecule-extra'
+              - not jackett_extra_mount[0].RW
+            fail_msg: "The additional volume did not reach the container: {{ jackett_container.Mounts }}"
+            success_msg: "The additional volume is mounted read-only at /extra"
 
-    # The `docker create` line in templates/systemd/jackett.service.j2 has a
-    # comment sitting in the middle of a backslash continuation, right in front
-    # of the tmpfs that linuxserver.io's read-only mode needs. systemd drops
-    # such a comment rather than passing it on to docker, but that is worth
-    # holding onto: if it ever stopped doing so, everything after the comment
-    # would silently become part of the image name.
-    - name: Assert that the read-only container still gets its writable /run
-      ansible.builtin.assert:
-        that:
-          - jackett_container.HostConfig.ReadonlyRootfs
-          - "'/run' in (jackett_container.HostConfig.Tmpfs | default({}))"
-          - "'exec' in jackett_container.HostConfig.Tmpfs['/run']"
-        fail_msg: >-
-          The container's root filesystem is
-          {{ 'read-only' if jackett_container.HostConfig.ReadonlyRootfs else 'writable' }}
-          and its tmpfs mounts are {{ jackett_container.HostConfig.Tmpfs | default({}) }}
-        success_msg: "The container is read-only with an exec tmpfs at /run"
+        # The `docker create` line in templates/systemd/jackett.service.j2 has a
+        # comment sitting in the middle of a backslash continuation, right in front
+        # of the tmpfs that linuxserver.io's read-only mode needs. systemd drops
+        # such a comment rather than passing it on to docker, but that is worth
+        # holding onto: if it ever stopped doing so, everything after the comment
+        # would silently become part of the image name.
+        - name: Assert that the read-only container still gets its writable /run
+          ansible.builtin.assert:
+            that:
+              - jackett_container.HostConfig.ReadonlyRootfs
+              - "'/run' in (jackett_container.HostConfig.Tmpfs | default({}))"
+              - "'exec' in jackett_container.HostConfig.Tmpfs['/run']"
+            fail_msg: >-
+              The container's root filesystem is
+              {{ 'read-only' if jackett_container.HostConfig.ReadonlyRootfs else 'writable' }}
+              and its tmpfs mounts are {{ jackett_container.HostConfig.Tmpfs | default({}) }}
+            success_msg: "The container is read-only with an exec tmpfs at /run"
 
-    - name: Assert that the role's uid and gid reached the container
-      ansible.builtin.assert:
-        that:
-          - jackett_container.Config.User == (jackett_expected_uid | string) ~ ':' ~ (jackett_expected_gid | string)
-          - ('PUID=' ~ jackett_expected_uid) in jackett_container.Config.Env
-          - ('PGID=' ~ jackett_expected_gid) in jackett_container.Config.Env
-        fail_msg: >-
-          The container runs as {{ jackett_container.Config.User }}
-          with {{ jackett_container.Config.Env | select('match', 'P[UG]ID=') | list }}
-        success_msg: "The container runs as {{ jackett_container.Config.User }} and carries the matching PUID/PGID"
+        - name: Assert that the role's uid and gid reached the container
+          ansible.builtin.assert:
+            that:
+              - jackett_container.Config.User == (jackett_expected_uid | string) ~ ':' ~ (jackett_expected_gid | string)
+              - ('PUID=' ~ jackett_expected_uid) in jackett_container.Config.Env
+              - ('PGID=' ~ jackett_expected_gid) in jackett_container.Config.Env
+            fail_msg: >-
+              The container runs as {{ jackett_container.Config.User }}
+              with {{ jackett_container.Config.Env | select('match', 'P[UG]ID=') | list }}
+            success_msg: "The container runs as {{ jackett_container.Config.User }} and carries the matching PUID/PGID"
 
-    - name: Assert that the role's timezone reached the container environment
-      ansible.builtin.assert:
-        that:
-          - ('TZ=' ~ jackett_expected_timezone) in jackett_container.Config.Env
-        fail_msg: "templates/env.j2 did not put TZ={{ jackett_expected_timezone }} on the container"
-        success_msg: "The container environment carries TZ={{ jackett_expected_timezone }}"
+        - name: Assert that the role's timezone reached the container environment
+          ansible.builtin.assert:
+            that:
+              - ('TZ=' ~ jackett_expected_timezone) in jackett_container.Config.Env
+            fail_msg: "templates/env.j2 did not put TZ={{ jackett_expected_timezone }} on the container"
+            success_msg: "The container environment carries TZ={{ jackett_expected_timezone }}"
 
-    - name: Assert that the container image is the pinned version
-      ansible.builtin.assert:
-        that:
-          - jackett_container.Config.Image == 'lscr.io/linuxserver/jackett:' ~ jackett_defaults.jackett_version
-        fail_msg: >-
-          The container runs {{ jackett_container.Config.Image }}, not the
-          {{ jackett_defaults.jackett_version }} pinned in defaults/main.yml
-        success_msg: "The container runs {{ jackett_container.Config.Image }}"
+        - name: Assert that the container image is the pinned version
+          ansible.builtin.assert:
+            that:
+              - jackett_container.Config.Image == 'lscr.io/linuxserver/jackett:' ~ jackett_defaults.jackett_version
+            fail_msg: >-
+              The container runs {{ jackett_container.Config.Image }}, not the
+              {{ jackett_defaults.jackett_version }} pinned in defaults/main.yml
+            success_msg: "The container runs {{ jackett_container.Config.Image }}"
 
-    # linuxserver.io stamps its own build onto the image as
-    # `v<Jackett version>-ls<rebuild counter>`. The trailing `-ls` matters:
-    # without it, a pin of 0.24.187 would happily match 0.24.1870-ls403.
-    - name: Assert the running Jackett is the version this role installs
-      ansible.builtin.assert:
-        that: jackett_container.Config.Labels['org.opencontainers.image.version'] is match('v' ~ (jackett_defaults.jackett_version | regex_escape) ~ '-ls[0-9]+$')
-        fail_msg: "Jackett reports {{ jackett_container.Config.Labels['org.opencontainers.image.version'] | default('none') }}, expected {{ jackett_defaults.jackett_version }}"
-        success_msg: "Jackett reports {{ jackett_container.Config.Labels['org.opencontainers.image.version'] }}"
+        # linuxserver.io stamps its own build onto the image as
+        # `v<Jackett version>-ls<rebuild counter>`. The trailing `-ls` matters:
+        # without it, a pin of 0.24.187 would happily match 0.24.1870-ls403.
+        - name: Assert the running Jackett is the version this role installs
+          ansible.builtin.assert:
+            that: jackett_container.Config.Labels['org.opencontainers.image.version'] is match('v' ~ (jackett_defaults.jackett_version | regex_escape) ~ '-ls[0-9]+$')
+            fail_msg: "Jackett reports {{ jackett_container.Config.Labels['org.opencontainers.image.version'] | default('none') }}, expected {{ jackett_defaults.jackett_version }}"
+            success_msg: "Jackett reports {{ jackett_container.Config.Labels['org.opencontainers.image.version'] }}"
 
-    # ------------------------------------------------------------------
-    # Traefik labels
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Traefik labels
+        # ------------------------------------------------------------------
 
-    - name: Assert that the Traefik labels describe the configured hostname and path prefix
-      ansible.builtin.assert:
-        that:
-          - jackett_container.Config.Labels['traefik.enable'] == 'true'
-          - jackett_container.Config.Labels['traefik.http.routers.jackett.rule'] == 'Host(`' ~ jackett_expected_hostname ~ '`) && PathPrefix(`' ~ jackett_expected_path_prefix ~ '`)'
-          - jackett_container.Config.Labels['traefik.http.middlewares.jackett-strip-prefix.stripprefix.prefixes'] == jackett_expected_path_prefix
-          - jackett_container.Config.Labels['traefik.http.routers.jackett.middlewares'] == 'jackett-slashless-redirect,jackett-strip-prefix'
-          - jackett_container.Config.Labels['traefik.http.services.jackett.loadbalancer.server.port'] == '9117'
-        fail_msg: "The Traefik labels are not what templates/labels.j2 should have produced: {{ jackett_container.Config.Labels }}"
-        success_msg: "The Traefik labels route {{ jackett_expected_hostname }}{{ jackett_expected_path_prefix }} to port 9117"
+        - name: Assert that the Traefik labels describe the configured hostname and path prefix
+          ansible.builtin.assert:
+            that:
+              - jackett_container.Config.Labels['traefik.enable'] == 'true'
+              - jackett_container.Config.Labels['traefik.http.routers.jackett.rule'] == 'Host(`' ~ jackett_expected_hostname ~ '`) && PathPrefix(`' ~ jackett_expected_path_prefix ~ '`)'
+              - jackett_container.Config.Labels['traefik.http.middlewares.jackett-strip-prefix.stripprefix.prefixes'] == jackett_expected_path_prefix
+              - jackett_container.Config.Labels['traefik.http.routers.jackett.middlewares'] == 'jackett-slashless-redirect,jackett-strip-prefix'
+              - jackett_container.Config.Labels['traefik.http.services.jackett.loadbalancer.server.port'] == '9117'
+            fail_msg: "The Traefik labels are not what templates/labels.j2 should have produced: {{ jackett_container.Config.Labels }}"
+            success_msg: "The Traefik labels route {{ jackett_expected_hostname }}{{ jackett_expected_path_prefix }} to port 9117"
 
-    - name: Assert that the additional labels and extra arguments reached the container
-      ansible.builtin.assert:
-        that:
-          - jackett_container.Config.Labels['mash.molecule.additional-label'] == 'set-by-the-role'
-          - jackett_container.Config.Labels['mash.molecule.extra-argument'] == 'set-by-the-role'
-        fail_msg: >-
-          jackett_container_labels_additional_labels or
-          jackett_container_extra_arguments did not reach the container:
-          {{ jackett_container.Config.Labels }}
-        success_msg: "The additional label and the extra argument both reached the container"
+        - name: Assert that the additional labels and extra arguments reached the container
+          ansible.builtin.assert:
+            that:
+              - jackett_container.Config.Labels['mash.molecule.additional-label'] == 'set-by-the-role'
+              - jackett_container.Config.Labels['mash.molecule.extra-argument'] == 'set-by-the-role'
+            fail_msg: >-
+              jackett_container_labels_additional_labels or
+              jackett_container_extra_arguments did not reach the container:
+              {{ jackett_container.Config.Labels }}
+            success_msg: "The additional label and the extra argument both reached the container"
 
-    # ------------------------------------------------------------------
-    # What the process inside the container actually sees
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # What the process inside the container actually sees
+        # ------------------------------------------------------------------
 
-    - name: Ask the Jackett container which timezone and user it is running in
-      ansible.builtin.command:
-        cmd: docker exec jackett sh -c 'date +%Z; id -u; id -g'
-      register: jackett_process_identity
-      changed_when: false
+        - name: Ask the Jackett container which timezone and user it is running in
+          ansible.builtin.command:
+            cmd: docker exec jackett sh -c 'date +%Z; id -u; id -g'
+          register: jackett_process_identity
+          changed_when: false
 
-    - name: Assert that the Jackett process runs in the role's timezone, as the role's user
-      ansible.builtin.assert:
-        that:
-          - jackett_process_identity.stdout_lines[0] == jackett_expected_timezone_abbreviation
-          - jackett_process_identity.stdout_lines[1] == jackett_expected_uid | string
-          - jackett_process_identity.stdout_lines[2] == jackett_expected_gid | string
-        fail_msg: >-
-          The container reports zone/uid/gid {{ jackett_process_identity.stdout_lines }},
-          expected [{{ jackett_expected_timezone_abbreviation }},
-          {{ jackett_expected_uid }}, {{ jackett_expected_gid }}]
-        success_msg: >-
-          The Jackett process runs in {{ jackett_process_identity.stdout_lines[0] }}
-          as {{ jackett_process_identity.stdout_lines[1] }}:{{ jackett_process_identity.stdout_lines[2] }}
+        - name: Assert that the Jackett process runs in the role's timezone, as the role's user
+          ansible.builtin.assert:
+            that:
+              - jackett_process_identity.stdout_lines[0] == jackett_expected_timezone_abbreviation
+              - jackett_process_identity.stdout_lines[1] == jackett_expected_uid | string
+              - jackett_process_identity.stdout_lines[2] == jackett_expected_gid | string
+            fail_msg: >-
+              The container reports zone/uid/gid {{ jackett_process_identity.stdout_lines }},
+              expected [{{ jackett_expected_timezone_abbreviation }},
+              {{ jackett_expected_uid }}, {{ jackett_expected_gid }}]
+            success_msg: >-
+              The Jackett process runs in {{ jackett_process_identity.stdout_lines[0] }}
+              as {{ jackett_process_identity.stdout_lines[1] }}:{{ jackett_process_identity.stdout_lines[2] }}
 
-    # ------------------------------------------------------------------
-    # What Jackett itself says
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # What Jackett itself says
+        # ------------------------------------------------------------------
 
-    # The container is started with `--log-driver=none`, so the log file
-    # Jackett keeps on the mounted data path is the only place its startup
-    # output goes.
-    - name: Read Jackett's own log from the mounted data path
-      ansible.builtin.slurp:
-        src: "{{ jackett_config_mount[0].Source }}/Jackett/log.txt"
-      register: jackett_log
+        # The container is started with `--log-driver=none`, so the log file
+        # Jackett keeps on the mounted data path is the only place its startup
+        # output goes.
+        - name: Read Jackett's own log from the mounted data path
+          ansible.builtin.slurp:
+            src: "{{ jackett_config_mount[0].Source }}/Jackett/log.txt"
+          register: jackett_log
 
-    - name: Collect what Jackett logged about itself
-      ansible.builtin.set_fact:
-        jackett_logged_versions: "{{ jackett_log.content | b64decode | regex_findall('Starting Jackett v([0-9][^ \\t\\r\\n]*)') }}"
-        jackett_logged_indexer_counts: "{{ jackett_log.content | b64decode | regex_findall('Loaded ([0-9]+) indexers in total') }}"
+        - name: Collect what Jackett logged about itself
+          ansible.builtin.set_fact:
+            jackett_logged_versions: "{{ jackett_log.content | b64decode | regex_findall('Starting Jackett v([0-9][^ \\t\\r\\n]*)') }}"
+            jackett_logged_indexer_counts: "{{ jackett_log.content | b64decode | regex_findall('Loaded ([0-9]+) indexers in total') }}"
 
-    - name: Assert the running Jackett is the version this role installs
-      ansible.builtin.assert:
-        that:
-          - jackett_logged_versions | length > 0
-          - jackett_logged_versions | last == jackett_defaults.jackett_version
-        fail_msg: "Jackett reports {{ jackett_logged_versions | last | default('none') }}, expected {{ jackett_defaults.jackett_version }}"
-        success_msg: "Jackett reports {{ jackett_logged_versions | last }}"
+        - name: Assert the running Jackett is the version this role installs
+          ansible.builtin.assert:
+            that:
+              - jackett_logged_versions | length > 0
+              - jackett_logged_versions | last == jackett_defaults.jackett_version
+            fail_msg: "Jackett reports {{ jackett_logged_versions | last | default('none') }}, expected {{ jackett_defaults.jackett_version }}"
+            success_msg: "Jackett reports {{ jackett_logged_versions | last }}"
 
-    # Kestrel answers /health as soon as it is listening, which happens before
-    # the indexer definitions have been read.
-    - name: Assert that Jackett finished loading its indexer definitions
-      ansible.builtin.assert:
-        that:
-          - jackett_logged_indexer_counts | length > 0
-          - jackett_logged_indexer_counts | last | int > 100
-        fail_msg: >-
-          Jackett did not report loading its indexers
-          ({{ jackett_logged_indexer_counts | default([]) }})
-        success_msg: "Jackett loaded {{ jackett_logged_indexer_counts | last }} indexers"
+        # Kestrel answers /health as soon as it is listening, which happens before
+        # the indexer definitions have been read.
+        - name: Assert that Jackett finished loading its indexer definitions
+          ansible.builtin.assert:
+            that:
+              - jackett_logged_indexer_counts | length > 0
+              - jackett_logged_indexer_counts | last | int > 100
+            fail_msg: >-
+              Jackett did not report loading its indexers
+              ({{ jackett_logged_indexer_counts | default([]) }})
+            success_msg: "Jackett loaded {{ jackett_logged_indexer_counts | last }} indexers"
 
-    # ------------------------------------------------------------------
-    # The API, and the negative control that keeps it honest
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # The API, and the negative control that keeps it honest
+        # ------------------------------------------------------------------
 
-    # Jackett mints an API key into the ServerConfig.json it keeps on the
-    # mounted data path. Reading it here proves the process and the host are
-    # looking at the same directory; using it against the API proves the
-    # process answering is the one that wrote it. It is a credential, so it
-    # never reaches the log.
-    - name: Read the API key Jackett wrote to the mounted data path
-      ansible.builtin.slurp:
-        src: "{{ jackett_config_mount[0].Source }}/Jackett/ServerConfig.json"
-      register: jackett_server_config
-      no_log: true
+        # Jackett mints an API key into the ServerConfig.json it keeps on the
+        # mounted data path. Reading it here proves the process and the host are
+        # looking at the same directory; using it against the API proves the
+        # process answering is the one that wrote it. It is a credential, so it
+        # never reaches the log.
+        - name: Read the API key Jackett wrote to the mounted data path
+          ansible.builtin.slurp:
+            src: "{{ jackett_config_mount[0].Source }}/Jackett/ServerConfig.json"
+          register: jackett_server_config
+          no_log: true
 
-    - name: Extract the API key
-      ansible.builtin.set_fact:
-        jackett_api_key: "{{ (jackett_server_config.content | b64decode | from_json).APIKey }}"
-      no_log: true
+        - name: Extract the API key
+          ansible.builtin.set_fact:
+            jackett_api_key: "{{ (jackett_server_config.content | b64decode | from_json).APIKey }}"
+          no_log: true
 
-    - name: Query the Torznab API with that key
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab/api?t=caps&apikey={{ jackett_api_key }}"
-        follow_redirects: none
-        return_content: true
-      register: jackett_caps_authenticated
-      failed_when: false
-      no_log: true
+        - name: Query the Torznab API with that key
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab/api?t=caps&apikey={{ jackett_api_key }}"
+            follow_redirects: none
+            return_content: true
+          register: jackett_caps_authenticated
+          failed_when: false
+          no_log: true
 
-    - name: Query the Torznab API without a key
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab/api?t=caps"
-        follow_redirects: none
-        return_content: true
-      register: jackett_caps_unauthenticated
-      failed_when: false
+        - name: Query the Torznab API without a key
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab/api?t=caps"
+            follow_redirects: none
+            return_content: true
+          register: jackett_caps_unauthenticated
+          failed_when: false
 
-    # Jackett answers 200 to both of these calls. Asserting on the status code
-    # alone would pass against an instance that rejects every request, which is
-    # what the unauthenticated call is here to rule out.
-    - name: Assert that the unauthenticated Torznab call is rejected
-      ansible.builtin.assert:
-        that:
-          - jackett_caps_unauthenticated.status | default(0) == 200
-          - "'Invalid API Key' in (jackett_caps_unauthenticated.content | default(''))"
-          - "'<caps>' not in (jackett_caps_unauthenticated.content | default(''))"
-        fail_msg: >-
-          Jackett did not reject an unauthenticated Torznab call
-          ({{ jackett_caps_unauthenticated.status | default('no response') }}:
-          {{ jackett_caps_unauthenticated.content | default('') | truncate(200) }})
-        success_msg: "Jackett rejects Torznab calls that carry no API key"
+        # Jackett answers 200 to both of these calls. Asserting on the status code
+        # alone would pass against an instance that rejects every request, which is
+        # what the unauthenticated call is here to rule out.
+        - name: Assert that the unauthenticated Torznab call is rejected
+          ansible.builtin.assert:
+            that:
+              - jackett_caps_unauthenticated.status | default(0) == 200
+              - "'Invalid API Key' in (jackett_caps_unauthenticated.content | default(''))"
+              - "'<caps>' not in (jackett_caps_unauthenticated.content | default(''))"
+            fail_msg: >-
+              Jackett did not reject an unauthenticated Torznab call
+              ({{ jackett_caps_unauthenticated.status | default('no response') }}:
+              {{ jackett_caps_unauthenticated.content | default('') | truncate(200) }})
+            success_msg: "Jackett rejects Torznab calls that carry no API key"
 
-    - name: Assert that the authenticated Torznab call is served
-      ansible.builtin.assert:
-        that:
-          - jackett_caps_authenticated.status | default(0) == 200
-          - "'<caps>' in (jackett_caps_authenticated.content | default(''))"
-          - "'Invalid API Key' not in (jackett_caps_authenticated.content | default(''))"
-        fail_msg: >-
-          Jackett did not serve a Torznab capabilities document to the key it
-          wrote to its own data path
-          (status {{ jackett_caps_authenticated.status | default('no response') }})
-        success_msg: "Jackett serves the Torznab API to the key it wrote to the mounted data path"
+        - name: Assert that the authenticated Torznab call is served
+          ansible.builtin.assert:
+            that:
+              - jackett_caps_authenticated.status | default(0) == 200
+              - "'<caps>' in (jackett_caps_authenticated.content | default(''))"
+              - "'Invalid API Key' not in (jackett_caps_authenticated.content | default(''))"
+            fail_msg: >-
+              Jackett did not serve a Torznab capabilities document to the key it
+              wrote to its own data path
+              (status {{ jackett_caps_authenticated.status | default('no response') }})
+            success_msg: "Jackett serves the Torznab API to the key it wrote to the mounted data path"
 
       rescue:
         # Whatever went wrong, the reason is almost always in the systemd service log.
