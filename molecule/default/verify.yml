@@ -22,6 +22,8 @@
     jackett_expected_timezone_abbreviation: JST
 
   tasks:
+    - name: Verify that Jackett works
+      block:
     # The role is not included in this playbook, so its defaults are not in
     # scope. Reading defaults/main.yml directly ties the version assertion
     # below.
@@ -335,3 +337,19 @@
           wrote to its own data path
           (status {{ jackett_caps_authenticated.status | default('no response') }})
         success_msg: "Jackett serves the Torznab API to the key it wrote to the mounted data path"
+
+      rescue:
+        # Whatever went wrong, the reason is almost always in the systemd service log.
+        - name: Retrieve the Jackett systemd service log
+          ansible.builtin.command:
+            cmd: journalctl --no-pager --output=cat --unit=jackett.service
+          register: jackett_service_log
+          changed_when: false
+
+        - name: Show the Jackett systemd service log
+          ansible.builtin.debug:
+            var: jackett_service_log.stdout_lines
+
+        - name: Fail because verification did not pass
+          ansible.builtin.fail:
+            msg: "Jackett verification failed. The systemd service log is printed above."
