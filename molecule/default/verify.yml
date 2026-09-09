@@ -83,12 +83,6 @@
               ({{ jackett_health.content | default('') | truncate(200) }})
             success_msg: "Jackett reports itself healthy"
 
-        - name: Retrieve the Jackett service log for debugging
-          when: jackett_debug_service_enabled | bool
-          ansible.builtin.command:
-            cmd: journalctl -xeu jackett.service
-          changed_when: false
-
         # ------------------------------------------------------------------
         # What the role told Docker to run
         # ------------------------------------------------------------------
