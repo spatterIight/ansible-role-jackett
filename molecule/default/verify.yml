@@ -21,6 +21,9 @@
     jackett_expected_timezone: Asia/Tokyo
     jackett_expected_timezone_abbreviation: JST
 
+    jackett_verify_units:
+      - jackett.service
+
   tasks:
     - name: Verify that Jackett works
       block:
@@ -32,13 +35,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: jackett_defaults
 
-        - name: Wait for the Jackett systemd service to become active (up to 180s)
+        - name: Wait for the Jackett systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: jackett.service
-          register: jackett_service
-          until: jackett_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: jackett_services
+          until: jackett_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ jackett_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -46,17 +50,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Jackett systemd service is active
+        - name: Assert the Jackett systemd services are active
           ansible.builtin.assert:
-            that: jackett_service.status.ActiveState == 'active'
-            fail_msg: "jackett.service is not active ({{ jackett_service.status.ActiveState }})"
-            success_msg: "jackett.service is active"
+            that: jackett_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(jackett_verify_units | zip(jackett_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Jackett systemd service log for debugging
+        - name: Retrieve the Jackett systemd services log for debugging
           when: jackett_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=jackett.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ jackett_verify_units }}"
 
         # Jackett's own health endpoint. It needs no authentication, it is served
         # by Jackett rather than by anything the container's init puts in front of
