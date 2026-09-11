@@ -339,6 +339,11 @@
               (status {{ jackett_caps_authenticated.status | default('no response') }})
             success_msg: "Jackett serves the Torznab API to the key it wrote to the mounted data path"
 
+        - name: Show Jackett systemd service status summary
+          ansible.builtin.debug:
+            msg:
+              - "Jackett systemd: {% for unit, state in jackett_verify_units | zip(jackett_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
+
       rescue:
         # Whatever went wrong, the reason is almost always in the systemd service log.
         - name: Retrieve the Jackett systemd service log
