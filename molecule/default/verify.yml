@@ -68,26 +68,23 @@
         # Jackett's own health endpoint. It needs no authentication, it is served
         # by Jackett rather than by anything the container's init puts in front of
         # it, and it only answers once Kestrel is listening.
-        - name: Wait for Jackett to answer its health endpoint
+        - name: Wait for Jackett to report itself healthy (up to 180s)
           ansible.builtin.uri:
             url: http://127.0.0.1:9117/health
             follow_redirects: none
             return_content: true
           register: jackett_health
+          until: jackett_health.status == 200 and jackett_health.json.status == 'OK'
+          retries: 36
+          delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
           failed_when: false
-          until: jackett_health.status | default(0) == 200
-          retries: 90
-          delay: 2
 
-        - name: Assert that Jackett reports itself healthy
+        - name: Assert Jackett reports itself healthy
           ansible.builtin.assert:
-            that:
-              - jackett_health.status | default(0) == 200
-              - (jackett_health.json | default({})).status | default('') == 'OK'
-            fail_msg: >-
-              Jackett's health endpoint answered
-              {{ jackett_health.status | default('none') }}
-              ({{ jackett_health.content | default('') | truncate(200) }})
+            that: jackett_health.json.status == 'OK'
+            fail_msg: "Jackett did not report itself healthy: {{ jackett_health.json.status | default('no response') }}"
             success_msg: "Jackett reports itself healthy"
 
         # ------------------------------------------------------------------
