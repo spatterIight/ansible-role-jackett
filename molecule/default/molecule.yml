@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -11,6 +12,8 @@ dependency:
 driver:
   name: docker
 platforms:
+  # The name embeds both the role and the scenario, so that a parallel run of
+  # another role's scenario cannot collide with this one.
   - name: jackett-${MOLECULE_DISTRO:-ubuntu2604}-default
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2604}-ansible:latest"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
@@ -19,8 +22,6 @@ platforms:
     cgroupns_mode: host
     privileged: true
     pre_build_image: true
-    published_ports:
-      - 127.0.0.1:9117:9117
 provisioner:
   name: ansible
   config_options:
@@ -32,12 +33,45 @@ provisioner:
         # Helper variables
         jackett_debug_service_enabled: false
 
-        # Variables for Jackett
-        jackett_uid: 1000
-        jackett_gid: 1000
-        jackett_hostname: localhost
-        jackett_container_labels_traefik_enabled: false
-        jackett_container_http_bind_port: 9117
+        # The values below are deliberately unusual. Finding them again on the
+        # running container is what proves they came from this role's templates
+        # rather than from a default that the image, Docker or Jackett itself
+        # would have produced anyway.
+
+        # Not 1000: a uid that exists in neither the test image nor the Jackett
+        # image, which exercises the ownership the role gives the data path.
+        jackett_uid: 1717
+        jackett_gid: 1717
+
+        jackett_hostname: jackett.molecule.local
+
+        # A non-root path prefix exercises the strip-prefix and slashless
+        # redirect middlewares in templates/labels.j2.
+        jackett_path_prefix: /jackett-ui
+
+        # Neither the role's default of Etc/UTC nor the test host's zone, so
+        # that the timezone the container ends up in can only have come from
+        # templates/env.j2.
+        jackett_timezone: Asia/Tokyo
+
+        jackett_container_labels_traefik_enabled: true
+
+        # Bound to the loopback interface of the test container only. Nothing
+        # is published to the machine running Molecule, so two scenarios can
+        # run side by side without fighting over a port.
+        jackett_container_http_bind_port: "127.0.0.1:9117"
+
+        jackett_container_labels_additional_labels: |
+          mash.molecule.additional-label=set-by-the-role
+
+        jackett_container_additional_volumes:
+          - type: bind
+            src: /jackett-molecule-extra
+            dst: /extra
+            options: readonly
+
+        jackett_container_extra_arguments:
+          - "--label=mash.molecule.extra-argument=set-by-the-role"
   env:
     # Workaround for https://github.com/ansible/molecule/issues/4391
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles

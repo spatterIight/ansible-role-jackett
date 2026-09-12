@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -17,12 +18,23 @@
     - name: Ensure required packages are installed for Jackett Molecule tests preparation
       ansible.builtin.package:
         name:
+          # Used by ansible.builtin.uri when it talks to Jackett.
           - python3-requests
+          # The storage driver below. Docker in a container cannot use the
+          # host's overlayfs, and fuse-overlayfs is several times faster than
+          # falling back to vfs.
+          - fuse-overlayfs
         state: present
+
+    - name: Ensure the directory backing jackett_container_additional_volumes exists
+      ansible.builtin.file:
+        path: /jackett-molecule-extra
+        state: directory
+        mode: "0755"
 
     - name: Ensure Docker is installed for Jackett Molecule tests preparation
       ansible.builtin.include_role:
         name: ansible-role-docker
       vars:
         docker_daemon_options:
-          storage-driver: vfs
+          storage-driver: fuse-overlayfs

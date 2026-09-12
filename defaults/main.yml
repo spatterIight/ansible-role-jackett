@@ -17,7 +17,18 @@ jackett_identifier: jackett
 jackett_base_path: "/{{ jackett_identifier }}"
 jackett_data_path: "{{ jackett_base_path }}/data"
 
-# renovate: datasource=docker depName=lscr.io/linuxserver/jackett versioning=semver
+# Renovate is deliberately pointed at ghcr.io even though the role pulls from lscr.io. The two are
+# the same registry - lscr.io answers with a `ghcr.io` authentication realm and serves an identical
+# manifest digest - but Renovate only fetches every page of a tag listing for a handful of hosts it
+# knows sort oldest-first, and ghcr.io is on that list while lscr.io is not. `linuxserver/jackett`
+# publishes 31505 tags in chronological order, so the `lscr.io/...` spelling stopped after the
+# default 20 pages, saw nothing newer than 0.21.696, and could never propose an update. That is why
+# every version bump in this repository's history was made by hand.
+#
+# `versioning=semver` keeps the plain `<major>.<minor>.<build>` release tags (1754 of them) and
+# discards the `-lsN` rebuild tags, the `-development` builds and the `amd64-`/`arm64v8-`/`version-`
+# flavours, which together make up the rest of the listing.
+# renovate: datasource=docker depName=ghcr.io/linuxserver/jackett versioning=semver
 jackett_version: 0.24.1870
 jackett_arch: amd64
 
@@ -62,7 +73,13 @@ jackett_container_network: "{{ jackett_identifier }}"
 # Control if the container network is deleted on uninstalling.
 jackett_container_network_deletion_enabled: true
 
-# The port Jackett is running on inside the container
+# The port Jackett is running on inside the container.
+#
+# This describes the container image, it does not configure it. Jackett takes its listening port
+# from `Port` in the `ServerConfig.json` file it maintains itself, and the container's own readiness
+# check is hardcoded to `nc -z localhost 9117`, so a container that listened anywhere else would
+# never be reported as started. Changing this value only moves the Traefik label and the port
+# published by `jackett_container_http_bind_port` away from where Jackett actually listens.
 jackett_container_http_port: 9117
 
 # Controls whether the container exposes a port (tcp/9117 in the container)
