@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -32,6 +33,7 @@ provisioner:
       all:
         # Helper variables
         jackett_debug_service_enabled: false
+        jackett_restarts_check_enabled: true
 
         # The values below are deliberately unusual. Finding them again on the
         # running container is what proves they came from this role's templates
