@@ -41,4 +41,6 @@ traefik.http.routers.{{ jackett_identifier }}.tls.certResolver={{ jackett_contai
 traefik.http.services.{{ jackett_identifier }}.loadbalancer.server.port={{ jackett_container_http_port }}
 {% endif %}
 
-{{ jackett_container_labels_additional_labels }}
+{% for arg in jackett_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}

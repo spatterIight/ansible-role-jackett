@@ -63,8 +63,8 @@ provisioner:
         # run side by side without fighting over a port.
         jackett_container_http_bind_port: "127.0.0.1:9117"
 
-        jackett_container_labels_additional_labels: |
-          mash.molecule.additional-label=set-by-the-role
+        jackett_container_labels_additional_labels:
+          - mash.molecule.additional-label=set-by-the-role
 
         jackett_container_additional_volumes:
           - type: bind
