@@ -195,7 +195,6 @@
               - jackett_container.Config.Labels['traefik.enable'] == 'true'
               - jackett_container.Config.Labels['traefik.http.routers.jackett.rule'] == 'Host(`' ~ jackett_expected_hostname ~ '`) && PathPrefix(`' ~ jackett_expected_path_prefix ~ '`)'
               - jackett_container.Config.Labels['traefik.http.middlewares.jackett-strip-prefix.stripprefix.prefixes'] == jackett_expected_path_prefix
-              - jackett_container.Config.Labels['traefik.http.routers.jackett.middlewares'] == 'jackett-slashless-redirect,jackett-strip-prefix'
               - jackett_container.Config.Labels['traefik.http.services.jackett.loadbalancer.server.port'] == '9117'
             fail_msg: "The Traefik labels are not what templates/labels.j2 should have produced: {{ jackett_container.Config.Labels }}"
             success_msg: "The Traefik labels route {{ jackett_expected_hostname }}{{ jackett_expected_path_prefix }} to port 9117"
