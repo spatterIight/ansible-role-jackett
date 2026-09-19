@@ -93,6 +93,9 @@ jackett_container_labels_traefik_priority: 0
 jackett_container_labels_traefik_entrypoints: web-secure
 jackett_container_labels_traefik_tls: "{{ jackett_container_labels_traefik_entrypoints != 'web' }}"
 jackett_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+jackett_container_labels_traefik_middleware_basic_auth_enabled: false
+# See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
+jackett_container_labels_traefik_middleware_basic_auth_users: ""
 
 # Controls which additional headers to attach to all HTTP requests.
 # To add your own custom request headers, use `jackett_container_labels_traefik_additional_request_headers_custom`
