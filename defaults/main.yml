@@ -107,7 +107,9 @@ jackett_container_labels_additional_labels_auto: []
 jackett_container_labels_additional_labels_custom: []
 
 # A list of extra arguments to pass to the container (`docker create` command)
-jackett_container_extra_arguments: []
+jackett_container_extra_arguments: "{{ jackett_container_extra_arguments_auto + jackett_container_extra_arguments_custom }}"
+jackett_container_extra_arguments_auto: []
+jackett_container_extra_arguments_custom: []
 
 # List of systemd services that the Jackett systemd service depends on
 jackett_systemd_required_services_list: "{{ (jackett_systemd_required_services_list_default + jackett_systemd_required_services_list_auto + jackett_systemd_required_services_list_custom) | unique }}"
