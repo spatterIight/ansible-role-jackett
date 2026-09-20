@@ -54,7 +54,7 @@ provisioner:
         # Neither the role's default of Etc/UTC nor the test host's zone, so
         # that the timezone the container ends up in can only have come from
         # templates/env.j2.
-        jackett_timezone: Asia/Tokyo
+        jackett_environment_variables_tz: Asia/Tokyo
 
         jackett_container_labels_traefik_enabled: true
 
