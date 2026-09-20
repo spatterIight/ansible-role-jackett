@@ -5,7 +5,7 @@
     "Under `semver` every Jackett release arrives as a patch, because the leading `0.24` moves roughly once a year; the minor bump that does move it still becomes a pull request for a human to look at."
   ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0",
-    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.1.0",
+    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.1.0"
   ]
 }
