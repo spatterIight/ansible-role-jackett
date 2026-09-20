@@ -182,6 +182,9 @@ Next, click `Copy Torznab Feed` of the indexer (tracker) you added to Jackett. P
 
 Fill in the rest of the form with your preferences, and you're done!
 
+>[!NOTE]
+> If you are looking for an Ansible role for Sonarr and Radarr, you can check out [ansible-role-sonarr](https://github.com/spatterIight/ansible-role-sonarr) and [ansible-role-radarr](https://github.com/spatterIight/ansible-role-radarr), both of which are maintained by me.
+
 ## Troubleshooting
 
 ### Check the service's logs
