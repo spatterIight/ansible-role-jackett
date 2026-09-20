@@ -1,5 +1,8 @@
 {#
+SPDX-FileCopyrightText: 2023 Julian-Samuel Gebühr
+SPDX-FileCopyrightText: 2023 Slavi Pantaleev
 SPDX-FileCopyrightText: 2025, 2026 spatterIight
+SPDX-FileCopyrightText: 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
@@ -13,6 +16,11 @@ traefik.docker.network={{ jackett_container_labels_traefik_docker_network }}
 
 {% set middlewares = [] %}
 
+{% if jackett_container_labels_traefik_middleware_basic_auth_enabled %}
+{% set middlewares = middlewares + [jackett_identifier + '-basic-auth'] %}
+traefik.http.middlewares.{{ jackett_identifier }}-basic-auth.basicauth.users={{ jackett_container_labels_traefik_middleware_basic_auth_users }}
+{% endif %}
+
 {% if jackett_container_labels_traefik_path_prefix != '/' %}
 traefik.http.middlewares.{{ jackett_identifier }}-slashless-redirect.redirectregex.regex=^({{ jackett_container_labels_traefik_path_prefix | quote }})$
 traefik.http.middlewares.{{ jackett_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
@@ -22,6 +30,20 @@ traefik.http.middlewares.{{ jackett_identifier }}-slashless-redirect.redirectreg
 {% if jackett_container_labels_traefik_path_prefix != '/' %}
 traefik.http.middlewares.{{ jackett_identifier }}-strip-prefix.stripprefix.prefixes={{ jackett_container_labels_traefik_path_prefix }}
 {% set middlewares = middlewares + [jackett_identifier + '-strip-prefix'] %}
+{% endif %}
+
+{% if jackett_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
+{% for name, value in jackett_container_labels_traefik_additional_request_headers.items() %}
+traefik.http.middlewares.{{ jackett_identifier }}-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [jackett_identifier + '-add-request-headers'] %}
+{% endif %}
+
+{% if jackett_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in jackett_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.{{ jackett_identifier }}-add-response-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [jackett_identifier + '-add-response-headers'] %}
 {% endif %}
 
 traefik.http.routers.{{ jackett_identifier }}.rule={{ jackett_container_labels_traefik_rule }}
@@ -41,4 +63,6 @@ traefik.http.routers.{{ jackett_identifier }}.tls.certResolver={{ jackett_contai
 traefik.http.services.{{ jackett_identifier }}.loadbalancer.server.port={{ jackett_container_http_port }}
 {% endif %}
 
-{{ jackett_container_labels_additional_labels }}
+{% for arg in jackett_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}

@@ -47,7 +47,11 @@ Currently there is one testing scenario available.
 
 ### `default`
 
-Tests a standard Jackett installation.
+Installs Jackett and then checks that the installation is real rather than merely present.
+
+The scenario deliberately configures the role with values nothing else would produce - uid/gid `1717`, the timezone `Asia/Tokyo`, the hostname `jackett.molecule.local`, the path prefix `/jackett-ui`, an extra read-only bind mount, an extra label and an extra container argument - and then looks for each of them on the running container.
+
+Check the comments on [`molecule/default/verify.yml`](molecule/default/verify.yml) for details about what to be verified.
 
 ## Running
 
