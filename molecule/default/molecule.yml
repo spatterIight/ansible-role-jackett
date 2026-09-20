@@ -61,7 +61,7 @@ provisioner:
         # Bound to the loopback interface of the test container only. Nothing
         # is published to the machine running Molecule, so two scenarios can
         # run side by side without fighting over a port.
-        jackett_container_http_bind_port: "127.0.0.1:9117"
+        jackett_container_http_host_bind_port: "127.0.0.1:9117"
 
         jackett_container_labels_additional_labels:
           - mash.molecule.additional-label=set-by-the-role
