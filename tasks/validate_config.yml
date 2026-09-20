@@ -37,6 +37,13 @@
 - name: Validate Jackett Traefik configuration
   when: jackett_container_labels_traefik_enabled | bool
   block:
+    - name: (Deprecation) Catch and report Jackett labels for Traefik in the old string format
+      ansible.builtin.fail:
+        msg: >-
+          `jackett_container_labels_additional_labels` now require a list of strings.
+          Replace `jackett_container_labels_additional_labels: |` with `jackett_container_labels_additional_labels_custom:` and make each label a list item.
+      when: "jackett_container_labels_additional_labels | default([]) is string"
+
     - name: Fail if required Jackett Traefik settings not defined
       ansible.builtin.fail:
         msg: >-
