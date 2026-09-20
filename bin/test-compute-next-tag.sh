@@ -59,7 +59,6 @@ scenario() {
 	cat > defaults/main.yml <<-'YAML'
 		# jackett_version: 9.99.9999
 
-		# Renovate is deliberately pointed at ghcr.io even though the role pulls from lscr.io.
 		# renovate: datasource=docker depName=ghcr.io/linuxserver/jackett versioning=semver
 		jackett_version: 0.24.1870
 

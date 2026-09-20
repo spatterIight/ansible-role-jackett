@@ -16,17 +16,6 @@ jackett_identifier: jackett
 jackett_base_path: "/{{ jackett_identifier }}"
 jackett_data_path: "{{ jackett_base_path }}/data"
 
-# Renovate is deliberately pointed at ghcr.io even though the role pulls from lscr.io. The two are
-# the same registry - lscr.io answers with a `ghcr.io` authentication realm and serves an identical
-# manifest digest - but Renovate only fetches every page of a tag listing for a handful of hosts it
-# knows sort oldest-first, and ghcr.io is on that list while lscr.io is not. `linuxserver/jackett`
-# publishes 31505 tags in chronological order, so the `lscr.io/...` spelling stopped after the
-# default 20 pages, saw nothing newer than 0.21.696, and could never propose an update. That is why
-# every version bump in this repository's history was made by hand.
-#
-# `versioning=semver` keeps the plain `<major>.<minor>.<build>` release tags (1754 of them) and
-# discards the `-lsN` rebuild tags, the `-development` builds and the `amd64-`/`arm64v8-`/`version-`
-# flavours, which together make up the rest of the listing.
 # renovate: datasource=docker depName=ghcr.io/linuxserver/jackett versioning=semver
 jackett_version: 0.24.1870
 jackett_arch: amd64
@@ -45,7 +34,7 @@ jackett_container_image: "{{ jackett_container_image_registry_prefix }}linuxserv
 jackett_container_image_tag: "{{ jackett_version }}"
 jackett_container_image_registry_prefix: "{{ jackett_container_image_registry_prefix_upstream }}"
 jackett_container_image_registry_prefix_upstream: "{{ jackett_container_image_registry_prefix_upstream_default }}"
-jackett_container_image_registry_prefix_upstream_default: lscr.io/
+jackett_container_image_registry_prefix_upstream_default: ghcr.io/
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 jackett_container_network: "{{ jackett_identifier }}"
