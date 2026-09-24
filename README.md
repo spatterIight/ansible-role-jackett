@@ -15,7 +15,7 @@ This role *implicitly* depends on:
 - [`com.devture.ansible.role.playbook_help`](https://github.com/devture/com.devture.ansible.role.playbook_help)
 - [`com.devture.ansible.role.systemd_docker_base`](https://github.com/devture/com.devture.ansible.role.systemd_docker_base)
 
-Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported options.
+Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported options. Refer to [this page](docs/configuring-jackett.md) for details about setting up the service with this role.
 
 💡 For an Ansible playbook which integrates this role and makes it easier to use, see the [Mother-of-All-Self-Hosting Ansible playbook](https://github.com/mother-of-all-self-hosting/mash-playbook).
 
@@ -41,11 +41,6 @@ You can read more about these upstream requirements in the documentation:
 
 1. <https://docs.linuxserver.io/misc/non-root/>
 2. <https://docs.linuxserver.io/misc/read-only/>
-
-## Notes on configuration
-
-- `jackett_container_http_port` describes the container image rather than configuring it. Jackett reads its listening port from the `ServerConfig.json` file it maintains on its own data path, and the container's readiness check is hardcoded to port 9117, so a container listening anywhere else would never come up.
-- Jackett mints an API key on first start and keeps it, in plain text, in `ServerConfig.json` under the role's data path (`/jackett/data/Jackett/ServerConfig.json` by default). Jackett writes that file with mode `0644`; what keeps it private is the `0750` directory the role creates around it, owned by `jackett_uid`:`jackett_gid`. Anything you give that uid or gid to on the host can read the key, and the key is enough to drive the whole Jackett API.
 
 ## Development
 
