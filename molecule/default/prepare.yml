@@ -27,15 +27,30 @@
           - fuse-overlayfs
         state: present
 
-    - name: Ensure the directory backing jackett_container_additional_volumes exists
-      ansible.builtin.file:
-        path: /jackett-molecule-extra
-        state: directory
-        mode: "0755"
-
     - name: Ensure Docker is installed for Jackett Molecule tests preparation
       ansible.builtin.include_role:
         name: ansible-role-docker
       vars:
         docker_daemon_options:
+          # `vfs` makes a full copy of every layer. The Jackett image is large
+          # enough for that to dominate the run - `fuse-overlayfs` gives the same
+          # nested-container isolation without the copying.
           storage-driver: fuse-overlayfs
+
+    # Bind-mounted into the Jackett container through
+    # `jackett_container_additional_volumes`. The role does not create the source
+    # of an additional volume, so it has to exist before the container is
+    # created, or `docker create` refuses the bind. verify.yml reads the marker
+    # file back from inside the container, which only works if the systemd unit
+    # really carries the additional volumes.
+    - name: Ensure the additional volume directory exists for Jackett Molecule tests
+      ansible.builtin.file:
+        path: "{{ jackett_molecule_extra_volume_src }}"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure a marker file exists in the Jackett Molecule additional volume
+      ansible.builtin.copy:
+        content: "{{ jackett_molecule_extra_volume_marker }}\n"
+        dest: "{{ jackett_molecule_extra_volume_src }}/{{ jackett_molecule_marker_filename }}"
+        mode: "0644"

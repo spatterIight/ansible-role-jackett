@@ -87,12 +87,6 @@
             fail_msg: "Jackett did not report itself healthy: {{ jackett_health.json.status | default('no response') }}"
             success_msg: "Jackett reports itself healthy"
 
-        # ------------------------------------------------------------------
-        # What the role told Docker to run
-        # ------------------------------------------------------------------
-
-        # `docker container inspect`, never a bare `docker inspect`: the latter
-        # also matches networks, and this role creates a network called `jackett`.
         - name: Inspect the Jackett container
           ansible.builtin.command:
             cmd: docker container inspect jackett
@@ -103,10 +97,14 @@
           ansible.builtin.set_fact:
             jackett_container: "{{ (jackett_container_raw.stdout | from_json)[0] }}"
 
+        # ------------------------------------------------------------------
+        # What the role told Docker to run
+        # ------------------------------------------------------------------
+
         - name: Collect the mounts the role asked for
           ansible.builtin.set_fact:
             jackett_config_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/config') | list }}"
-            jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/extra') | list }}"
+            jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/molecule-extra') | list }}"
 
         - name: Assert that the role's data path is mounted at /config
           ansible.builtin.assert:
@@ -129,7 +127,25 @@
               - jackett_extra_mount[0].Source == '/jackett-molecule-extra'
               - not jackett_extra_mount[0].RW
             fail_msg: "The additional volume did not reach the container: {{ jackett_container.Mounts }}"
-            success_msg: "The additional volume is mounted read-only at /extra"
+            success_msg: "The additional volume is mounted read-only at /molecule-extra"
+
+        # Reading the file back from inside the
+        # container is the difference between the variable existing and it working.
+        - name: Read the marker through the additional volume
+          ansible.builtin.command:
+            cmd: >-
+              docker exec jackett
+              cat {{ jackett_molecule_extra_volume_dst }}/{{ jackett_molecule_marker_filename }}
+          register: jackett_extra_volume
+          changed_when: false
+
+        - name: Assert the additional volume is mounted into the Radarr container
+          ansible.builtin.assert:
+            that:
+              - jackett_extra_volume.rc == 0
+              - jackett_extra_volume.stdout | trim == jackett_molecule_extra_volume_marker
+            fail_msg: "The additional volume did not carry the marker into the container"
+            success_msg: "The additional volume carries the marker into the container"
 
         # The `docker create` line in templates/systemd/jackett.service.j2 has a
         # comment sitting in the middle of a backslash continuation, right in front
