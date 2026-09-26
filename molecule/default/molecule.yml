@@ -43,13 +43,11 @@ provisioner:
         jackett_molecule_extra_volume_src: /jackett-molecule-extra
         jackett_molecule_extra_volume_dst: /molecule-extra
 
-        # The values below are deliberately unusual. Finding them again on the
-        # running container is what proves they came from this role's templates
-        # rather than from a default that the image, Docker or Jackett itself
-        # would have produced anyway.
-
-        # Not 1000: a uid that exists in neither the test image nor the Jackett
-        # image, which exercises the ownership the role gives the data path.
+        # Variables for Jackett
+        #
+        # Deliberately not 1000: the linuxserver.io PUID/PGID pattern has left a
+        # needed directory unwritable in other roles of this fleet, and a uid
+        # that exists in the test image by accident would hide that.
         jackett_uid: 1717
         jackett_gid: 1717
 
