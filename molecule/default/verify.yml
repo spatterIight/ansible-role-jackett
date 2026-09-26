@@ -87,12 +87,6 @@
             fail_msg: "Jackett did not report itself healthy: {{ jackett_health.json.status | default('no response') }}"
             success_msg: "Jackett reports itself healthy"
 
-        # ------------------------------------------------------------------
-        # What the role told Docker to run
-        # ------------------------------------------------------------------
-
-        # `docker container inspect`, never a bare `docker inspect`: the latter
-        # also matches networks, and this role creates a network called `jackett`.
         - name: Inspect the Jackett container
           ansible.builtin.command:
             cmd: docker container inspect jackett
@@ -102,6 +96,10 @@
         - name: Parse the Jackett container definition
           ansible.builtin.set_fact:
             jackett_container: "{{ (jackett_container_raw.stdout | from_json)[0] }}"
+
+        # ------------------------------------------------------------------
+        # What the role told Docker to run
+        # ------------------------------------------------------------------
 
         - name: Collect the mounts the role asked for
           ansible.builtin.set_fact:
