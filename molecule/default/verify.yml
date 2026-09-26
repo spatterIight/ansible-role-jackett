@@ -129,6 +129,24 @@
             fail_msg: "The additional volume did not reach the container: {{ jackett_container.Mounts }}"
             success_msg: "The additional volume is mounted read-only at /molecule-extra"
 
+        # Reading the file back from inside the
+        # container is the difference between the variable existing and it working.
+        - name: Read the marker through the additional volume
+          ansible.builtin.command:
+            cmd: >-
+              docker exec jackett
+              cat {{ jackett_molecule_extra_volume_dst }}/{{ jackett_molecule_marker_filename }}
+          register: jackett_extra_volume
+          changed_when: false
+
+        - name: Assert the additional volume is mounted into the Radarr container
+          ansible.builtin.assert:
+            that:
+              - jackett_extra_volume.rc == 0
+              - jackett_extra_volume.stdout | trim == jackett_molecule_extra_volume_marker
+            fail_msg: "The additional volume did not carry the marker into the container"
+            success_msg: "The additional volume carries the marker into the container"
+
         # The `docker create` line in templates/systemd/jackett.service.j2 has a
         # comment sitting in the middle of a backslash continuation, right in front
         # of the tmpfs that linuxserver.io's read-only mode needs. systemd drops
