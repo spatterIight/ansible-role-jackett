@@ -35,6 +35,14 @@ provisioner:
         jackett_debug_service_enabled: false
         jackett_restarts_check_enabled: true
 
+        # The host directory mounted into the container through
+        # `jackett_container_additional_volumes`, and the file placed in it by
+        # prepare.yml. Reading that file from inside the container is what
+        # proves the additional volumes reach the systemd unit rather than
+        # being merely declared in defaults/main.yml.
+        jackett_molecule_extra_volume_src: /jackett-molecule-extra
+        jackett_molecule_extra_volume_dst: /molecule-extra
+
         # The values below are deliberately unusual. Finding them again on the
         # running container is what proves they came from this role's templates
         # rather than from a default that the image, Docker or Jackett itself
@@ -58,8 +66,8 @@ provisioner:
 
         jackett_container_additional_volumes:
           - type: bind
-            src: /jackett-molecule-extra
-            dst: /extra
+            src: "{{ jackett_molecule_extra_volume_src }}"
+            dst: "{{ jackett_molecule_extra_volume_dst }}"
             options: readonly
 
         jackett_container_labels_traefik_enabled: true

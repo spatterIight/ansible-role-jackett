@@ -27,9 +27,15 @@
           - fuse-overlayfs
         state: present
 
-    - name: Ensure the directory backing jackett_container_additional_volumes exists
+    # Bind-mounted into the Jackett container through
+    # `jackett_container_additional_volumes`. The role does not create the source
+    # of an additional volume, so it has to exist before the container is
+    # created, or `docker create` refuses the bind. verify.yml reads the marker
+    # file back from inside the container, which only works if the systemd unit
+    # really carries the additional volumes.
+    - name: Ensure the additional volume directory exists for Jackett Molecule tests
       ansible.builtin.file:
-        path: /jackett-molecule-extra
+        path: "{{ jackett_molecule_extra_volume_src }}"
         state: directory
         mode: "0755"
 
