@@ -51,20 +51,10 @@ provisioner:
         # redirect middlewares in templates/labels.j2.
         jackett_path_prefix: /jackett-ui
 
-        # Neither the role's default of Etc/UTC nor the test host's zone, so
-        # that the timezone the container ends up in can only have come from
-        # templates/env.j2.
-        jackett_environment_variables_tz: Asia/Tokyo
-
-        jackett_container_labels_traefik_enabled: true
-
         # Bound to the loopback interface of the test container only. Nothing
         # is published to the machine running Molecule, so two scenarios can
         # run side by side without fighting over a port.
         jackett_container_http_host_bind_port: "127.0.0.1:9117"
-
-        jackett_container_labels_additional_labels:
-          - mash.molecule.additional-label=set-by-the-role
 
         jackett_container_additional_volumes:
           - type: bind
@@ -72,8 +62,18 @@ provisioner:
             dst: /extra
             options: readonly
 
+        jackett_container_labels_traefik_enabled: true
+
+        jackett_container_labels_additional_labels:
+          - mash.molecule.additional-label=set-by-the-role
+
         jackett_container_extra_arguments:
           - "--label=mash.molecule.extra-argument=set-by-the-role"
+
+        # Neither the role's default of Etc/UTC nor the test host's zone, so
+        # that the timezone the container ends up in can only have come from
+        # templates/env.j2.
+        jackett_environment_variables_tz: Asia/Tokyo
   env:
     # Workaround for https://github.com/ansible/molecule/issues/4391
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
