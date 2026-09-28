@@ -36,7 +36,7 @@ provisioner:
         jackett_restarts_check_enabled: true
 
         # The host directory mounted into the container through
-        # `jackett_container_additional_volumes`, and the file placed in it by
+        # `jackett_container_additional_volumes_custom`, and the file placed in it by
         # prepare.yml. Reading that file from inside the container is what
         # proves the additional volumes reach the systemd unit rather than
         # being merely declared in defaults/main.yml.
@@ -68,7 +68,7 @@ provisioner:
         # run side by side without fighting over a port.
         jackett_container_http_host_bind_port: "127.0.0.1:9117"
 
-        jackett_container_additional_volumes:
+        jackett_container_additional_volumes_custom:
           - type: bind
             src: "{{ jackett_molecule_extra_volume_src }}"
             dst: "{{ jackett_molecule_extra_volume_dst }}"

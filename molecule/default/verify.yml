@@ -116,11 +116,11 @@
             fail_msg: "The role's data path is not bind-mounted at /config: {{ jackett_container.Mounts }}"
             success_msg: "{{ jackett_config_mount[0].Source | default('?') }} is bind-mounted at /config"
 
-        # jackett_container_additional_volumes has been inert in several roles in
+        # jackett_container_additional_volumes_custom has been inert in several roles in
         # this collection - rendered into a comment, or into a `-v` that silently
         # dropped the options. Both the destination and the readonly option have
         # to arrive.
-        - name: Assert that jackett_container_additional_volumes reached the container
+        - name: Assert that jackett_container_additional_volumes_custom reached the container
           ansible.builtin.assert:
             that:
               - jackett_extra_mount | length == 1
