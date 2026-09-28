@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -104,7 +105,7 @@
         - name: Collect the mounts the role asked for
           ansible.builtin.set_fact:
             jackett_config_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/config') | list }}"
-            jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', '/molecule-extra') | list }}"
+            jackett_extra_mount: "{{ jackett_container.Mounts | selectattr('Destination', 'equalto', jackett_molecule_extra_volume_dst) | list }}"
 
         - name: Assert that the role's data path is mounted at /config
           ansible.builtin.assert:
@@ -124,10 +125,10 @@
             that:
               - jackett_extra_mount | length == 1
               - jackett_extra_mount[0].Type == 'bind'
-              - jackett_extra_mount[0].Source == '/jackett-molecule-extra'
+              - jackett_extra_mount[0].Source == jackett_molecule_extra_volume_src
               - not jackett_extra_mount[0].RW
             fail_msg: "The additional volume did not reach the container: {{ jackett_container.Mounts }}"
-            success_msg: "The additional volume is mounted read-only at /molecule-extra"
+            success_msg: "The additional volume is mounted read-only at {{ jackett_molecule_extra_volume_dst }}"
 
         # Reading the file back from inside the
         # container is the difference between the variable existing and it working.
