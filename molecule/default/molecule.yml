@@ -42,6 +42,12 @@ provisioner:
         # being merely declared in defaults/main.yml.
         jackett_molecule_extra_volume_src: /jackett-molecule-extra
         jackett_molecule_extra_volume_dst: /molecule-extra
+        jackett_molecule_extra_volume_marker: only-a-real-bind-mount-can-read-this
+
+        # Files placed on the host under the paths the role bind-mounts. Jackett
+        # itself is asked to list them back, so a mount that docker accepted but
+        # the process cannot see does not pass.
+        jackett_molecule_marker_filename: jackett-molecule-marker.txt
 
         # Variables for Jackett
         #
